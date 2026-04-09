@@ -1,0 +1,33 @@
+{
+  "name": "@vue-scaffold/admin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --mode dev",
+    "dev:test": "vite --mode test",
+    "dev:prod": "vite --mode prod",
+    "build": "vite build --mode dev",
+    "build:test": "vite build --mode test",
+    "build:prod": "vite build --mode prod",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src --ext .ts,.vue"
+  },
+  "dependencies": {
+    "@vue-scaffold/api": "workspace:*",
+    "@vue-scaffold/constants": "workspace:*",
+    "@vue-scaffold/directives": "workspace:*",
+    "@vue-scaffold/styles": "workspace:*",
+    "@vue-scaffold/types": "workspace:*",
+    "@vue-scaffold/ui": "workspace:*",
+    "@vue-scaffold/utils": "workspace:*",
+    "axios": "^1.11.0",
+    "dayjs": "^1.11.13",
+    "element-plus": "^2.10.6",
+    "nprogress": "^0.2.0",
+    "pinia": "^2.3.1",
+    "pinia-plugin-persistedstate": "^4.3.0",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.1"
+  }
+}

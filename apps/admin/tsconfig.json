@@ -1,0 +1,33 @@
+{
+  // admin 应用自己的 TS 配置，在这里补充应用层别名和项目引用关系。
+  "extends": "../../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    // 开启 composite 后，admin 才能作为 monorepo 里的一个可被引用项目参与增量构建。
+    "composite": true,
+    // 让路径别名从当前 apps/admin 目录开始解析。
+    "baseUrl": ".",
+    "paths": {
+      // admin 应用内部统一使用 @/ 指向 src，避免大量相对路径。
+      "@/*": ["src/*"],
+      // 下面这些别名用于引用 workspace 里的公共包源码。
+      "@vue-scaffold/api": ["../../packages/api/src/index.ts"],
+      "@vue-scaffold/constants": ["../../packages/constants/src/index.ts"],
+      "@vue-scaffold/directives": ["../../packages/directives/src/index.ts"],
+      "@vue-scaffold/styles": ["../../packages/styles/src/index.scss"],
+      "@vue-scaffold/types": ["../../packages/types/src/index.ts"],
+      "@vue-scaffold/ui": ["../../packages/ui/src/index.ts"],
+      "@vue-scaffold/utils": ["../../packages/utils/src/index.ts"]
+    }
+  },
+  // 当前应用真正参与类型检查的源码范围。
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue", "env.d.ts"],
+  // references 描述“当前 TS 项目依赖哪些子项目”，这里必须写项目目录相对路径，不是 import 别名。
+  "references": [
+    { "path": "../../packages/api" },
+    { "path": "../../packages/constants" },
+    { "path": "../../packages/directives" },
+    { "path": "../../packages/types" },
+    { "path": "../../packages/ui" },
+    { "path": "../../packages/utils" }
+  ]
+}
