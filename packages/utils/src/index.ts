@@ -5,3 +5,4 @@ export * from './message';
 export * from './polling';
 export * from './composables';
 export * from './encrypt';
+export * from './uuid';

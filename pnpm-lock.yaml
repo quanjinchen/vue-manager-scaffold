@@ -56,6 +56,9 @@ importers:
       '@vue-scaffold/directives':
         specifier: workspace:*
         version: link:../../packages/directives
+      '@vue-scaffold/styles':
+        specifier: workspace:*
+        version: link:../../packages/styles
       '@vue-scaffold/types':
         specifier: workspace:*
         version: link:../../packages/types

@@ -23,7 +23,6 @@ export const constantRoutes: RouteRecordRaw[] = [
     path: '/',
     name: 'root',
     component: AdminLayout,
-    redirect: '/index/baseInfo',
     children: []
   },
   {
@@ -44,6 +43,46 @@ export const constantRoutes: RouteRecordRaw[] = [
 // 本地页面路由表。登录后会按照后端 menuList.path 精确匹配这些页面，再动态挂到 root 下。
 export const localRoutes: RouteRecordRaw[] = [
   {
+    path: '/system/user',
+    name: 'system-user',
+    component: UsersView,
+    meta: {
+      title: '用户列表',
+      icon: 'User',
+      permissions: 'system:user:query'
+    }
+  },
+  {
+    path: '/system/org',
+    name: 'system-org',
+    component: OrganizationsView,
+    meta: {
+      title: '组织管理',
+      icon: 'Document',
+      permissions: 'system:org:query'
+    }
+  },
+  {
+    path: '/system/menu',
+    name: 'system-menu',
+    component: MenusView,
+    meta: {
+      title: '平台菜单',
+      icon: 'Setting',
+      permissions: 'system:menu:query'
+    }
+  },
+  {
+    path: '/system/role',
+    name: 'system-role',
+    component: RolesView,
+    meta: {
+      title: '平台角色',
+      icon: 'Setting',
+      permissions: 'system:role:query'
+    }
+  },
+  {
     path: '/index/baseInfo',
     name: 'index-baseInfo',
     component: DashboardView,
@@ -58,46 +97,6 @@ export const localRoutes: RouteRecordRaw[] = [
         'system:index:appRank',
         'system:index:userDevice'
       ]
-    }
-  },
-  {
-    path: '/user/index',
-    name: 'user-index',
-    component: UsersView,
-    meta: {
-      title: '用户列表',
-      icon: 'User',
-      permissions: 'system:user:query'
-    }
-  },
-  {
-    path: '/organization',
-    name: 'organization',
-    component: OrganizationsView,
-    meta: {
-      title: '组织管理',
-      icon: 'Document',
-      permissions: 'system:org:query'
-    }
-  },
-  {
-    path: '/system/menus',
-    name: 'system-menus',
-    component: MenusView,
-    meta: {
-      title: '平台菜单',
-      icon: 'Setting',
-      permissions: 'system:sysMenu:query'
-    }
-  },
-  {
-    path: '/system/roles',
-    name: 'system-roles',
-    component: RolesView,
-    meta: {
-      title: '平台角色',
-      icon: 'Setting',
-      permissions: 'system:sysRole:query'
     }
   }
 ];

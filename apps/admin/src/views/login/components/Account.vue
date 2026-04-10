@@ -26,7 +26,6 @@
 <script setup lang="ts" name="Account">
 import { reactive, ref, toRefs } from 'vue';
 import type { FormInstance } from 'element-plus';
-import { encryptUtils } from '@vue-scaffold/utils';
 import GraphVerifyCode from './GraphVerifyCode.vue';
 
 const props = defineProps({
@@ -86,7 +85,7 @@ const dataInfo = reactive({
   get params() {
     return {
       ...this.form.model,
-      password: encryptUtils.encodePassword(this.form.model.password),
+      password: this.form.model.password,
       code: graphVerifyCodeRef.value?.dataInfo.verifyCode || '',
       uuid: graphVerifyCodeRef.value?.dataInfo.uuid || ''
     };

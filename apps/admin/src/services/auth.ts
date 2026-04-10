@@ -1,14 +1,17 @@
 import type { AccessMenuItem } from '@vue-scaffold/types';
 import { requests } from '@/api/requests';
-import { authRepository } from '@/mock/repository';
 
 type LoginInfoResponse = {
   data?: Record<string, any>;
-  id?: string;
+  id?: string | number;
   adminId?: string | number;
+  userId?: string | number;
+  username?: string;
   userName?: string;
+  nickname?: string;
   fullName?: string;
   email?: string;
+  roleCodes?: string[];
   menuList?: Record<string, any>[];
   profile?: {
     id?: string;
@@ -27,12 +30,17 @@ function unwrapLoginInfo(loginInfo: LoginInfoResponse) {
   return loginInfo as Record<string, any>;
 }
 
-function collectPermissions(menuList: Record<string, any>[] = []) {
+function collectPermissions(menuList: Record<string, any>[] = [], initialPermissions: string[] = []) {
   const permissions = new Set<string>();
+  initialPermissions.forEach(item => {
+    if (item) {
+      permissions.add(String(item));
+    }
+  });
   const loop = (list: Record<string, any>[]) => {
     list.forEach(item => {
-      if (item.menuCode) {
-        permissions.add(String(item.menuCode));
+      if (item.permissionCode ?? item.menuCode) {
+        permissions.add(String(item.permissionCode ?? item.menuCode));
       }
       if (Array.isArray(item.children) && item.children.length) {
         loop(item.children);
@@ -43,15 +51,30 @@ function collectPermissions(menuList: Record<string, any>[] = []) {
   return [...permissions];
 }
 
+function mapMenuType(menuType?: string | number) {
+  switch (String(menuType ?? '').toUpperCase()) {
+    case 'CATALOG':
+      return 1 as const;
+    case 'MENU':
+      return 2 as const;
+    case 'BUTTON':
+      return 4 as const;
+    default:
+      return Number(menuType) === 1 || Number(menuType) === 2 || Number(menuType) === 3 || Number(menuType) === 4
+        ? Number(menuType) as 1 | 2 | 3 | 4
+        : 2 as const;
+  }
+}
+
 function mapMenuList(menuList: Record<string, any>[] = []): AccessMenuItem[] {
   return menuList
     .filter(item => item && (item.path || (Array.isArray(item.children) && item.children.length)))
     .map(item => ({
       name: String(item.menuName ?? item.name ?? ''),
       path: String(item.path),
-      menuType: Number(item.menuType) as 1 | 2 | 3 | 4,
+      menuType: mapMenuType(item.menuType),
       icon: item.icon ? String(item.icon) : undefined,
-      permissions: item.menuCode ? String(item.menuCode) : undefined,
+      permissions: item.permissionCode ?? item.menuCode ? String(item.permissionCode ?? item.menuCode) : undefined,
       children: Array.isArray(item.children) ? mapMenuList(item.children) : undefined
     }));
 }
@@ -59,18 +82,24 @@ function mapMenuList(menuList: Record<string, any>[] = []): AccessMenuItem[] {
 function normalizeAccessPayload(token: string, loginInfo: LoginInfoResponse, account: string) {
   const rawLoginInfo = unwrapLoginInfo(loginInfo);
   const userInfo = rawLoginInfo.userInfo ?? rawLoginInfo;
-  const menuList = Array.isArray(userInfo.menuList) ? userInfo.menuList : [];
-  const permissions = rawLoginInfo.permissions?.length ? rawLoginInfo.permissions : collectPermissions(menuList);
+  const menuList = Array.isArray(rawLoginInfo.menus)
+    ? rawLoginInfo.menus
+    : Array.isArray(userInfo.menuList)
+      ? userInfo.menuList
+      : [];
+  const permissions = rawLoginInfo.permissions?.length
+    ? rawLoginInfo.permissions
+    : collectPermissions(menuList);
 
   return {
     token: String(token ?? ''),
     profile: {
-      id: String(rawLoginInfo.profile?.id ?? userInfo.adminId ?? userInfo.id ?? '1'),
-      name: String(rawLoginInfo.profile?.name ?? userInfo.userName ?? userInfo.fullName ?? account),
-      email: String(rawLoginInfo.profile?.email ?? userInfo.email ?? `${account}@example.com`)
+      id: String(rawLoginInfo.profile?.id ?? userInfo.adminId ?? userInfo.userId ?? userInfo.id ?? '1'),
+      name: String(rawLoginInfo.profile?.name ?? userInfo.nickname ?? userInfo.username ?? userInfo.userName ?? userInfo.fullName ?? account),
+      email: String(rawLoginInfo.profile?.email ?? userInfo.email ?? '')
     },
     permissions,
-    menuList: rawLoginInfo.menus?.length ? rawLoginInfo.menus : mapMenuList(menuList)
+    menuList: mapMenuList(menuList)
   };
 }
 
@@ -80,12 +109,6 @@ export async function loginByPassword(params: Record<string, string>) {
       alertError: false,
       needLogin: false
     }
-  }).catch(async error => {
-    const code = error?.response?.data?.code;
-    if (code) {
-      throw error;
-    }
-    return authRepository.login(params.account, params.password);
   });
 
   const token = String(loginResult?.token ?? '');
@@ -94,10 +117,15 @@ export async function loginByPassword(params: Record<string, string>) {
   }
 
   const loginInfo = await requests.login.getLoginInfo.request({}, {
+    axiosOptions: {
+      headers: {
+        Authorization: token
+      }
+    },
     customOptions: {
       alertError: false
     }
-  }).catch(() => authRepository.getLoginInfo(params.account));
+  });
 
   return normalizeAccessPayload(token, loginInfo || {}, params.account);
 }

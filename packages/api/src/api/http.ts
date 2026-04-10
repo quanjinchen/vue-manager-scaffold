@@ -1,5 +1,6 @@
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
 import { ElMessage } from 'element-plus';
+import { generateUuid } from '@vue-scaffold/utils';
 
 type RequestHooks = {
   getToken?: () => string;
@@ -48,16 +49,21 @@ export async function request({
     needLogin: true,
     ...customOptions
   };
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+    Authorization: finalCustomOptions.needLogin && requestHooks.getToken?.()
+      ? requestHooks.getToken?.()
+      : '',
+    'X-REQUEST-ID': generateUuid(),
+    'X-TIMESTAMP': String(Date.now())
+  };
 
   const instance = axios.create({
     baseURL: requestHooks.getBaseURL?.() ?? '',
     timeout: 30000,
     headers: {
-      'Content-Type': 'application/json',
-      Authorization: finalCustomOptions.needLogin && requestHooks.getToken?.()
-        ? `Bearer ${requestHooks.getToken?.()}`
-        : '',
-      'X-REQUEST-ID': globalThis.crypto?.randomUUID?.() ?? `req-${Date.now()}`
+      ...defaultHeaders,
+      ...(axiosOptions.headers ?? {})
     },
     ...axiosOptions
   });

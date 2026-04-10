@@ -3,7 +3,10 @@
   "compilerOptions": {
     "composite": true,
     "declaration": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@vue-scaffold/utils": ["../utils/src/index.ts"]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue", "../utils/src/**/*.ts"]
 }
