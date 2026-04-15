@@ -42,6 +42,8 @@ export async function request({
   axiosOptions = {},
   customOptions = {}
 }: RequestOptions = {}) {
+  // 单独拆出 headers，避免调用方传入 axiosOptions.headers 时把默认请求头整体覆盖掉。
+  const { headers: customHeaders = {}, ...restAxiosOptions } = axiosOptions;
   const finalCustomOptions = {
     paramsKey: /^(post|put|patch)$/i.test(method) ? 'data' : 'params',
     alertSuccess: false,
@@ -63,9 +65,9 @@ export async function request({
     timeout: 30000,
     headers: {
       ...defaultHeaders,
-      ...(axiosOptions.headers ?? {})
+      ...customHeaders
     },
-    ...axiosOptions
+    ...restAxiosOptions
   });
 
   try {
@@ -73,11 +75,11 @@ export async function request({
       method,
       url,
       [finalCustomOptions.paramsKey]: params,
-      ...axiosOptions
+      ...restAxiosOptions
     });
     const result = response.data;
     if (typeof result === 'object' && result !== null && 'code' in result) {
-      if (result.code === 0 || result.code === 200) {
+      if (result.code === 0) {
         return result;
       }
       throw new AxiosError(result.message ?? result.msg ?? 'Request failed', undefined, undefined, undefined, response);

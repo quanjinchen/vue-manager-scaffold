@@ -84,7 +84,7 @@
       {
         stripe: false,
         data: [],
-        emptyText: 'No data'
+        emptyText: '暂无数据'
       },
       loadingAttrs,
       attrs as Record<string, any>,

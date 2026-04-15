@@ -1,22 +1,23 @@
 <template>
   <AppDialog
     v-model="visible"
-    :modal-props="{ title: `${isEdit ? 'Edit' : 'Create'} Menu`, width: 680 }"
+    :modal-props="{ title: `${isEdit ? '编辑' : '新增'}菜单`, width: 680 }"
     :footer-props="{
       buttons: [
-        { text: 'Cancel', close: true, buttonProps: {} },
-        { text: submitLoading ? 'Saving...' : 'Save', close: false, buttonProps: { type: 'primary', loading: submitLoading }, click: handleSubmit }
+        { text: '取消', close: true, buttonProps: {} },
+        { text: submitLoading ? '保存中...' : '保存', close: false, buttonProps: { type: 'primary', loading: submitLoading }, click: handleSubmit }
       ]
     }"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-      <el-form-item label="Parent Menu" prop="parentId">
+      <el-form-item label="上级菜单" prop="parentId">
         <el-tree-select
           v-model="form.parentId"
           style="width: 100%"
           :data="menuTree"
           node-key="id"
           :props="{ label: 'menuName', children: 'children' }"
+          placeholder="请选择上级菜单"
           clearable
           check-strictly
           default-expand-all
@@ -25,43 +26,43 @@
 
       <el-row :gutter="16">
         <el-col :span="12">
-          <el-form-item label="Menu Type" prop="menuType">
-            <AppSelect v-model="form.menuType" :list="menuTypeOptions" />
+          <el-form-item label="菜单类型" prop="menuType">
+            <AppSelect v-model="form.menuType" :list="menuTypeOptions" :select-props="{ placeholder: '请选择菜单类型' }" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Icon" prop="icon">
-            <AppInput v-model="form.icon" placeholder="Element Plus icon name" />
+          <el-form-item label="图标" prop="icon">
+            <AppInput v-model="form.icon" placeholder="请输入 Element Plus 图标名称" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Menu Name" prop="menuName">
-            <AppInput v-model="form.menuName" v-trim />
+          <el-form-item label="菜单名称" prop="menuName">
+            <AppInput v-model="form.menuName" v-trim placeholder="请输入菜单名称" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Order" prop="orderNum">
-            <AppInputNumber v-model="form.orderNum" :input-number-props="{ min: 1, max: 9999, style: 'width: 100%' }" />
+          <el-form-item label="排序" prop="orderNum">
+            <AppInputNumber v-model="form.orderNum" :input-number-props="{ min: 1, max: 9999, style: 'width: 100%', placeholder: '请输入排序' }" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Path" prop="path">
-            <AppInput v-model="form.path" v-trim />
+          <el-form-item label="路径" prop="path">
+            <AppInput v-model="form.path" v-trim placeholder="请输入路径" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Permission Code" prop="menuCode">
-            <AppInput v-model="form.menuCode" v-trim />
+          <el-form-item label="权限编码" prop="menuCode">
+            <AppInput v-model="form.menuCode" v-trim placeholder="请输入权限编码" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Enabled" prop="enabled">
+          <el-form-item label="是否启用" prop="enabled">
             <AppSwitch v-model="form.enabled" />
           </el-form-item>
         </el-col>
         <el-col :span="24">
-          <el-form-item label="Remark" prop="remark">
-            <AppInput v-model="form.remark" :input-props="{ type: 'textarea', rows: 3 }" />
+          <el-form-item label="备注" prop="remark">
+            <AppInput v-model="form.remark" placeholder="请输入备注" :input-props="{ type: 'textarea', rows: 3 }" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -110,10 +111,10 @@ import type { MenuRecord } from '@/types/domain';
   });
 
   const rules = {
-    menuType: [{ required: true, message: 'Please select menu type', trigger: 'change' }],
-    menuName: [{ required: true, message: 'Please enter menu name', trigger: 'blur' }],
-    path: [{ required: true, message: 'Please enter path', trigger: 'blur' }],
-    menuCode: [{ required: true, message: 'Please enter permission code', trigger: 'blur' }]
+    menuType: [{ required: true, message: '请选择菜单类型', trigger: 'change' }],
+    menuName: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
+    path: [{ required: true, message: '请输入路径', trigger: 'blur' }],
+    menuCode: [{ required: true, message: '请输入权限编码', trigger: 'blur' }]
   };
 
   watch(
@@ -136,7 +137,7 @@ import type { MenuRecord } from '@/types/domain';
     await formRef.value?.validate();
     submitLoading.value = true;
     try {
-      emit('submit', { ...form }, props.record?.id);
+      await emit('submit', { ...form }, props.record?.id);
       visible.value = false;
     } finally {
       submitLoading.value = false;

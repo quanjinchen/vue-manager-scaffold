@@ -20,7 +20,7 @@ configureHttpHooks({
   getToken: () => authStore.token,
   getBaseURL: () => window.location.origin,
   onUnauthorized: () => {
-    authStore.logout();
+    authStore.clearAccess();
     router.replace('/login');
   }
 });

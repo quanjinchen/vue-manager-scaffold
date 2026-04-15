@@ -225,7 +225,7 @@ export const mockMenus: MenuRecord[] = [
         menuType: 2,
         menuName: '平台菜单',
         path: '/system/menus',
-        menuCode: 'system:sysMenu:query',
+        menuCode: 'system:menu:query',
         orderNum: 1,
         enabled: true,
         remark: '菜单管理'
@@ -236,7 +236,7 @@ export const mockMenus: MenuRecord[] = [
         menuType: 2,
         menuName: '平台角色',
         path: '/system/roles',
-        menuCode: 'system:sysRole:query',
+        menuCode: 'system:role:query',
         orderNum: 2,
         enabled: true,
         remark: '角色管理',
@@ -247,7 +247,7 @@ export const mockMenus: MenuRecord[] = [
             menuType: 4,
             menuName: '新增平台角色',
             path: '',
-            menuCode: 'system:sysRole:add',
+            menuCode: 'system:role:add',
             orderNum: 1,
             enabled: true,
             remark: '新增平台角色'
@@ -258,7 +258,7 @@ export const mockMenus: MenuRecord[] = [
             menuType: 4,
             menuName: '编辑平台角色',
             path: '',
-            menuCode: 'system:sysRole:update',
+            menuCode: 'system:role:update',
             orderNum: 2,
             enabled: true,
             remark: '编辑平台角色'
@@ -269,7 +269,7 @@ export const mockMenus: MenuRecord[] = [
             menuType: 4,
             menuName: '删除平台角色',
             path: '',
-            menuCode: 'system:sysRole:delete',
+            menuCode: 'system:role:delete',
             orderNum: 3,
             enabled: true,
             remark: '删除平台角色'

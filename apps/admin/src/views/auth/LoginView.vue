@@ -1,24 +1,24 @@
 <template>
   <section class="LoginView">
     <div class="LoginView-card surface-card">
-      <p class="eyebrow">Admin template</p>
-      <h1>Start new projects faster</h1>
+      <p class="eyebrow">管理后台模板</p>
+      <h1>快速开始后台项目</h1>
       <p class="description">
-        Account-password login migrated from the IAM login module and simplified for template reuse.
+        基于账号密码登录能力整理的前端模板页面，便于快速复用和扩展。
       </p>
 
       <el-form label-position="top" @keyup.enter="login">
-        <el-form-item label="Account">
-          <AppInput v-model="form.account" v-trim placeholder="demo.admin" />
+        <el-form-item label="账号">
+          <AppInput v-model="form.account" v-trim placeholder="请输入账号" />
         </el-form-item>
 
-        <el-form-item label="Password">
-          <AppInput v-model="form.password" v-trim :input-props="{ type: 'password', showPassword: true }" placeholder="Enter any password" />
+        <el-form-item label="密码">
+          <AppInput v-model="form.password" v-trim :input-props="{ type: 'password', showPassword: true }" placeholder="请输入密码" />
         </el-form-item>
       </el-form>
 
       <AppButton class="login-button" :button-props="{ type: 'primary', size: 'large', loading }" @click="login">
-        {{ loading ? 'Signing in...' : 'Enter scaffold' }}
+        {{ loading ? '登录中...' : '进入系统' }}
       </AppButton>
     </div>
   </section>
@@ -44,7 +44,7 @@
 
   async function login() {
     if (!form.account || !form.password) {
-      messageAlert({ type: 'warning', message: 'Please enter account and password' });
+      messageAlert({ type: 'warning', message: '请输入账号和密码' });
       return;
     }
     loading.value = true;

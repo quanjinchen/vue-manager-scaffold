@@ -1,53 +1,53 @@
 <template>
   <AppDialog
     v-model="visible"
-    :modal-props="{ title: `${isEdit ? 'Edit' : 'Create'} User`, width: 720 }"
+    :modal-props="{ title: `${isEdit ? '编辑' : '新增'}用户`, width: 720 }"
     :footer-props="{
       buttons: [
-        { text: 'Cancel', close: true, buttonProps: {} },
-        { text: submitLoading ? 'Saving...' : 'Save', close: false, buttonProps: { type: 'primary', loading: submitLoading }, click: handleSubmit }
+        { text: '取消', close: true, buttonProps: {} },
+        { text: submitLoading ? '保存中...' : '保存', close: false, buttonProps: { type: 'primary', loading: submitLoading }, click: handleSubmit }
       ]
     }"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
       <el-row :gutter="16">
         <el-col :span="12">
-          <el-form-item label="Username" prop="userName">
-            <AppInput v-model="form.userName" v-trim />
+          <el-form-item label="用户名" prop="userName">
+            <AppInput v-model="form.userName" v-trim placeholder="请输入用户名" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Full Name" prop="fullName">
-            <AppInput v-model="form.fullName" v-trim />
+          <el-form-item label="姓名" prop="fullName">
+            <AppInput v-model="form.fullName" v-trim placeholder="请输入姓名" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Phone" prop="phoneNum">
-            <AppInput v-model="form.phoneNum" v-trim />
+          <el-form-item label="手机号" prop="phoneNum">
+            <AppInput v-model="form.phoneNum" v-trim placeholder="请输入手机号" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Email" prop="email">
-            <AppInput v-model="form.email" v-trim />
+          <el-form-item label="邮箱" prop="email">
+            <AppInput v-model="form.email" v-trim placeholder="请输入邮箱" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Organization" prop="orgIds">
+          <el-form-item label="所属组织" prop="orgIds">
             <AppSelectV2
               v-model="form.orgIds"
               :list="organizationOptions.map(item => ({ id: item.id, name: item.orgName }))"
-              :select-v2-props="{ multiple: true, collapseTags: true, placeholder: 'Select organizations' }"
+              :select-v2-props="{ multiple: true, collapseTags: true, placeholder: '请选择所属组织' }"
             />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Status" prop="status">
-            <AppSelect v-model="form.status" :list="statusOptions" />
+          <el-form-item label="状态" prop="status">
+            <AppSelect v-model="form.status" :list="statusOptions" :select-props="{ placeholder: '请选择状态' }" />
           </el-form-item>
         </el-col>
         <el-col :span="24">
-          <el-form-item label="Remark" prop="remark">
-            <AppInput v-model="form.remark" :input-props="{ type: 'textarea', rows: 3 }" />
+          <el-form-item label="备注" prop="remark">
+            <AppInput v-model="form.remark" placeholder="请输入备注" :input-props="{ type: 'textarea', rows: 3 }" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -88,8 +88,8 @@ import type { OrganizationRecord, UserRecord } from '@/types/domain';
   });
 
   const statusOptions = [
-    { id: 'active', name: 'Active' },
-    { id: 'disabled', name: 'Disabled' }
+    { id: 'active', name: '启用' },
+    { id: 'disabled', name: '停用' }
   ];
 
   const form = reactive<Omit<UserRecord, 'id' | 'createdAt' | 'updatedAt'>>({
@@ -104,10 +104,10 @@ import type { OrganizationRecord, UserRecord } from '@/types/domain';
   });
 
   const rules = {
-    userName: [{ required: true, message: 'Please enter username', trigger: 'blur' }],
-    fullName: [{ required: true, message: 'Please enter full name', trigger: 'blur' }],
-    phoneNum: [{ required: true, message: 'Please enter phone', trigger: 'blur' }],
-    email: [{ required: true, message: 'Please enter email', trigger: 'blur' }]
+    userName: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+    fullName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+    phoneNum: [{ required: true, message: '请输入手机号', trigger: 'blur' }],
+    email: [{ required: true, message: '请输入邮箱', trigger: 'blur' }]
   };
 
   watch(
@@ -139,7 +139,7 @@ import type { OrganizationRecord, UserRecord } from '@/types/domain';
     await formRef.value?.validate();
     submitLoading.value = true;
     try {
-      emit('submit', { ...form }, props.record?.id);
+      await emit('submit', { ...form }, props.record?.id);
       visible.value = false;
     } finally {
       submitLoading.value = false;

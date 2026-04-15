@@ -1,39 +1,39 @@
 <template>
   <AppDialog
     v-model="visible"
-    :modal-props="{ title: `${isEdit ? 'Edit' : 'Create'} Role`, width: 640 }"
+    :modal-props="{ title: `${isEdit ? '编辑' : '新增'}角色`, width: 640 }"
     :footer-props="{
       buttons: [
-        { text: 'Cancel', close: true, buttonProps: {} },
-        { text: submitLoading ? 'Saving...' : 'Save', close: false, buttonProps: { type: 'primary', loading: submitLoading }, click: handleSubmit }
+        { text: '取消', close: true, buttonProps: {} },
+        { text: submitLoading ? '保存中...' : '保存', close: false, buttonProps: { type: 'primary', loading: submitLoading }, click: handleSubmit }
       ]
     }"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
       <el-row :gutter="16">
         <el-col :span="12">
-          <el-form-item label="Role Name" prop="roleName">
-            <AppInput v-model="form.roleName" v-trim />
+          <el-form-item label="角色名称" prop="roleName">
+            <AppInput v-model="form.roleName" v-trim placeholder="请输入角色名称" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Role Code" prop="roleCode">
-            <AppInput v-model="form.roleCode" v-trim :input-props="{ disabled: isEdit && form.systemDefault }" />
+          <el-form-item label="角色编码" prop="roleCode">
+            <AppInput v-model="form.roleCode" v-trim placeholder="请输入角色编码" :input-props="{ disabled: isEdit && form.systemDefault }" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Default Role" prop="systemDefault">
+          <el-form-item label="是否默认角色" prop="systemDefault">
             <AppSwitch v-model="form.systemDefault" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Data Scope Type" prop="dataScopeType">
-            <AppSelect v-model="form.dataScopeType" :list="dataScopeOptions" />
+          <el-form-item label="数据范围" prop="dataScopeType">
+            <AppSelect v-model="form.dataScopeType" :list="dataScopeOptions" :select-props="{ placeholder: '请选择数据范围' }" />
           </el-form-item>
         </el-col>
         <el-col :span="24">
-          <el-form-item label="Remark" prop="remark">
-            <AppInput v-model="form.remark" :input-props="{ type: 'textarea', rows: 3 }" />
+          <el-form-item label="备注" prop="remark">
+            <AppInput v-model="form.remark" placeholder="请输入备注" :input-props="{ type: 'textarea', rows: 3 }" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -80,8 +80,8 @@
   });
 
   const rules = {
-    roleName: [{ required: true, message: 'Please enter role name', trigger: 'blur' }],
-    roleCode: [{ required: true, message: 'Please enter role code', trigger: 'blur' }]
+    roleName: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
+    roleCode: [{ required: true, message: '请输入角色编码', trigger: 'blur' }]
   };
 
   watch(
@@ -100,7 +100,7 @@
     await formRef.value?.validate();
     submitLoading.value = true;
     try {
-      emit('submit', { ...form }, props.record?.id);
+      await emit('submit', { ...form }, props.record?.id);
       visible.value = false;
     } finally {
       submitLoading.value = false;

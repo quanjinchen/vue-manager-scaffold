@@ -1,12 +1,12 @@
 export const userStatusOptions = {
-  active: { text: 'Active', type: 'success' },
-  disabled: { text: 'Disabled', type: 'danger' }
+  active: { text: '启用', type: 'success' },
+  disabled: { text: '停用', type: 'danger' }
 };
 
 export const menuTypeOptions = [
-  { id: 1, name: 'Directory' },
-  { id: 2, name: 'Menu' },
-  { id: 3, name: 'Page' },
-  { id: 4, name: 'Button' }
+  { id: 1, name: '目录' },
+  { id: 2, name: '菜单' },
+  { id: 3, name: '页面' },
+  { id: 4, name: '按钮' }
 ];
 

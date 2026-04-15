@@ -4,6 +4,7 @@ import AdminLayout from '@/layouts/AdminLayout.vue';
 import LoginView from '@/views/login/LoginView.vue';
 import DashboardView from '@/views/dashboard/DashboardView.vue';
 import MenusView from '@/views/system/MenusView.vue';
+import OperationLogsView from '@/views/system/OperationLogsView.vue';
 import OrganizationsView from '@/views/system/OrganizationsView.vue';
 import UsersView from '@/views/system/UsersView.vue';
 import RolesView from '@/views/system/RolesView.vue';
@@ -15,7 +16,7 @@ export const constantRoutes: RouteRecordRaw[] = [
     name: 'login',
     component: LoginView,
     meta: {
-      title: 'Login',
+      title: '登录',
       noAuth: true
     }
   },
@@ -30,11 +31,11 @@ export const constantRoutes: RouteRecordRaw[] = [
     name: 'not-found',
     component: {
       render() {
-        return h('div', { style: 'padding:24px' }, 'Page not found');
+        return h('div', { style: 'padding:24px' }, '页面不存在');
       }
     },
     meta: {
-      title: 'Not Found',
+      title: '页面不存在',
       hideInMenu: true
     }
   }
@@ -42,6 +43,16 @@ export const constantRoutes: RouteRecordRaw[] = [
 
 // 本地页面路由表。登录后会按照后端 menuList.path 精确匹配这些页面，再动态挂到 root 下。
 export const localRoutes: RouteRecordRaw[] = [
+  {
+    path: '/system/operation-log',
+    name: 'system-operation-log',
+    component: OperationLogsView,
+    meta: {
+      title: '日志审计',
+      icon: 'Document',
+      permissions: 'system:operationLog:query'
+    }
+  },
   {
     path: '/system/user',
     name: 'system-user',

@@ -2,7 +2,7 @@ import { computed } from 'vue';
 import { deepMerge, getCssObject } from '@vue-scaffold/utils';
 
 export const loadingAttrs = {
-  'element-loading-text': 'Loading...',
+  'element-loading-text': '加载中...',
   'element-loading-svg-view-box': '-10, -10, 50, 50',
   'element-loading-svg': `
   <path class="path" d="
@@ -47,7 +47,7 @@ export function useModal(
     const defaults = props.modalGenre === 'drawer' ? { size: '32%' } : {};
     return deepMerge(
       {
-        title: 'Dialog',
+        title: '弹窗',
         width: 520,
         draggable: true,
         closeOnClickModal: false,
@@ -65,8 +65,8 @@ export function useModal(
     const buttons = (props.footerProps?.buttons ?? defaultProps.footerProps?.buttons ?? []).map((item: any) => {
       if (typeof item === 'string') {
         return item === 'cancel'
-          ? { type: 'default', text: 'Cancel', close: true }
-          : { type: 'primary', text: 'Confirm', close: false };
+          ? { type: 'default', text: '取消', close: true }
+          : { type: 'primary', text: '确认', close: false };
       }
       return item;
     });

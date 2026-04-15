@@ -2,7 +2,7 @@
   <section class="AdminLayout">
     <aside class="AdminLayout-sidebar" :style="{ width: appStore.sidebarWidth }">
       <div class="AdminLayout-logo">
-        <strong>{{ appStore.sidebarCollapsed ? 'VS' : 'Vue Scaffold' }}</strong>
+        <strong>{{ appStore.sidebarCollapsed ? '管理台' : '后台管理系统' }}</strong>
       </div>
 
       <AppMenu :list="menuStore.menuTree" :collapsed="appStore.sidebarCollapsed" class="AdminLayout-menu" />
@@ -12,13 +12,13 @@
       <header class="AdminLayout-header">
         <div class="left">
           <AppButton :button-props="{ text: true }" @click="appStore.toggleSidebar()">
-            {{ appStore.sidebarCollapsed ? 'Expand' : 'Collapse' }}
+            {{ appStore.sidebarCollapsed ? '展开菜单' : '收起菜单' }}
           </AppButton>
         </div>
 
         <div class="right">
-          <span class="welcome">Hello, {{ authStore.profile.name || 'Guest' }}</span>
-          <AppButton @click="logout">Logout</AppButton>
+          <span class="welcome">你好，{{ authStore.profile.name || '未登录用户' }}</span>
+          <AppButton @click="logout">退出登录</AppButton>
         </div>
       </header>
 
@@ -32,6 +32,7 @@
 
 <script setup lang="ts" name="AdminLayout">
 import { useRouter } from 'vue-router';
+import { messageConfirm } from '@vue-scaffold/utils';
 import { useAppStore, useAuthStore, useMenuStore } from '@/stores';
 
   const router = useRouter();
@@ -39,8 +40,12 @@ import { useAppStore, useAuthStore, useMenuStore } from '@/stores';
   const appStore = useAppStore();
   const menuStore = useMenuStore();
 
-  function logout() {
-    authStore.logout();
+  async function logout() {
+    await messageConfirm('确认退出当前登录状态吗？', '退出确认', {
+      confirmButtonText: '退出',
+      cancelButtonText: '取消'
+    });
+    await authStore.logout();
     router.replace('/login');
   }
 </script>

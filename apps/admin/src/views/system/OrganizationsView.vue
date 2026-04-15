@@ -4,19 +4,20 @@
       <AppListHeader>
         <div class="header-search">
           <div>
-            <h2>Organizations</h2>
-            <p>Tree and CRUD management migrated from the IAM organization module.</p>
+            <h2>组织管理</h2>
+            <p>支持组织树浏览、创建与编辑维护。</p>
           </div>
         </div>
         <div class="header-handle">
-          <AppButton :button-props="{ type: 'primary' }" @click="openCreate()">Create organization</AppButton>
+          <AppButton :button-props="{ loading }" @click="loadData()">刷新</AppButton>
+          <AppButton :button-props="{ type: 'primary' }" @click="openCreate()">新增组织</AppButton>
         </div>
       </AppListHeader>
     </header>
 
     <section class="content">
       <div class="tree-panel surface-card">
-        <h3>Organization Tree</h3>
+        <h3>组织树</h3>
         <el-tree
           :data="organizations"
           node-key="id"
@@ -27,7 +28,7 @@
       </div>
 
       <div class="table-panel surface-card">
-        <AppTable :table-props="{ data: flatOrganizations }" :table-info="tableInfo" @handle-click="handleAction" />
+        <AppTable :table-props="{ data: flatOrganizations }" :table-info="tableInfo" :loading="loading" @handle-click="handleAction" />
       </div>
     </section>
 
@@ -43,13 +44,25 @@
 <script setup lang="ts" name="OrganizationsView">
   import { computed, onMounted, ref } from 'vue';
   import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
-import OrganizationFormDialog from '@/components/forms/OrganizationFormDialog.vue';
-import { organizationRepository } from '@/mock/repository';
-import type { OrganizationRecord } from '@/types/domain';
+  import OrganizationFormDialog from '@/components/forms/OrganizationFormDialog.vue';
+  import { requests } from '@/api/requests';
+  import type { OrganizationRecord } from '@/types/domain';
+
+  type OrgTreeItem = {
+    id: number | string;
+    parentId?: number | string | null;
+    orgCode?: string;
+    name?: string;
+    leaderName?: string;
+    sortOrder?: number;
+    children?: OrgTreeItem[];
+  };
 
   const organizations = ref<OrganizationRecord[]>([]);
   const selectedRecord = ref<OrganizationRecord | null>(null);
   const dialogVisible = ref(false);
+  const loading = ref(false);
+  const actionLoading = ref(false);
 
   const flatOrganizations = computed(() => {
     const walk = (items: OrganizationRecord[]): OrganizationRecord[] =>
@@ -59,25 +72,43 @@ import type { OrganizationRecord } from '@/types/domain';
 
   const tableInfo = {
     columns: [
-      { key: 'name', prop: 'orgName', label: 'Organization', minWidth: 180 },
-      { key: 'shortName', prop: 'shortName', label: 'Short Name', minWidth: 120 },
-      { key: 'orderNum', prop: 'orderNum', label: 'Order', minWidth: 80 },
-      { key: 'remark', prop: 'remark', label: 'Remark', minWidth: 180 },
+      { key: 'name', prop: 'orgName', label: '组织名称', minWidth: 180 },
+      { key: 'shortName', prop: 'shortName', label: '组织简称', minWidth: 120 },
+      { key: 'orderNum', prop: 'orderNum', label: '排序', minWidth: 80 },
+      { key: 'remark', prop: 'remark', label: '备注', minWidth: 180 },
       {
         key: 'actions',
-        label: 'Actions',
+        label: '操作',
         genre: '$action',
         width: 200,
         actions: [
-          { key: 'edit', label: 'Edit', permissions: 'system:org:update' },
-          { key: 'delete', label: 'Delete', permissions: 'system:org:delete', type: 'danger' }
+          { key: 'edit', label: '编辑', permissions: 'system:org:update' },
+          { key: 'delete', label: '删除', permissions: 'system:org:delete', type: 'danger' }
         ]
       }
     ]
   };
 
+  function mapOrganization(item: OrgTreeItem): OrganizationRecord {
+    return {
+      id: String(item.id),
+      parentId: item.parentId === null || item.parentId === undefined ? null : String(item.parentId),
+      orgName: item.name ?? '',
+      shortName: item.orgCode ?? '',
+      orderNum: Number(item.sortOrder ?? 1),
+      remark: item.leaderName ?? '',
+      children: Array.isArray(item.children) ? item.children.map(mapOrganization) : []
+    };
+  }
+
   async function loadData() {
-    organizations.value = await organizationRepository.tree();
+    loading.value = true;
+    try {
+      const result = await requests.organizations.tree.request();
+      organizations.value = Array.isArray(result) ? result.map((item: OrgTreeItem) => mapOrganization(item)) : [];
+    } finally {
+      loading.value = false;
+    }
   }
 
   function handleNodeClick(node: OrganizationRecord) {
@@ -100,27 +131,46 @@ import type { OrganizationRecord } from '@/types/domain';
   }
 
   async function handleSubmit(payload: Omit<OrganizationRecord, 'id' | 'children'>, id?: string) {
+    const requestBody = {
+      id: id ? Number(id) : undefined,
+      parentId: payload.parentId ? Number(payload.parentId) : 0,
+      orgCode: payload.shortName ?? '',
+      name: payload.orgName,
+      leaderName: payload.remark ?? '',
+      sortOrder: payload.orderNum,
+      status: 1
+    };
     if (id) {
-      await organizationRepository.update(id, payload);
-      messageAlert({ message: 'Organization updated' });
+      await requests.organizations.update.request(requestBody);
+      messageAlert({ message: '组织更新成功' });
     } else {
-      await organizationRepository.create(payload);
-      messageAlert({ message: 'Organization created' });
+      await requests.organizations.save.request(requestBody);
+      messageAlert({ message: '组织创建成功' });
     }
     await loadData();
   }
 
   async function handleAction(row: OrganizationRecord, action: Record<string, any>) {
+    if (actionLoading.value) {
+      return;
+    }
     if (action.key === 'edit') {
       selectedRecord.value = row;
       dialogVisible.value = true;
       return;
     }
     if (action.key === 'delete') {
-      await messageConfirm(`Delete organization ${row.orgName}?`);
-      await organizationRepository.remove(row.id);
-      messageAlert({ message: 'Organization deleted' });
-      await loadData();
+      actionLoading.value = true;
+      try {
+        await messageConfirm(`确认删除组织“${row.orgName}”吗？`);
+        await requests.organizations.delete.request({
+          orgId: Number(row.id)
+        });
+        messageAlert({ message: '组织删除成功' });
+        await loadData();
+      } finally {
+        actionLoading.value = false;
+      }
     }
   }
 
