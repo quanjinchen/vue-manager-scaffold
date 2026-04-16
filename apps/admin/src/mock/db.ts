@@ -68,7 +68,6 @@ export const mockRoles: RoleRecord[] = [
     userNum: 2,
     userGroupNum: 1,
     systemDefault: true,
-    dataScopeType: '1',
     remark: '默认平台角色',
     createdAt: '2026-04-01 09:00:00',
     updatedAt: '2026-04-03 10:00:00'
@@ -80,7 +79,6 @@ export const mockRoles: RoleRecord[] = [
     userNum: 3,
     userGroupNum: 0,
     systemDefault: false,
-    dataScopeType: '5',
     remark: '审计和日志查看角色',
     createdAt: '2026-04-01 10:00:00',
     updatedAt: '2026-04-03 11:30:00'

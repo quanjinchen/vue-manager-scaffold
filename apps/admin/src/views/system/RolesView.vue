@@ -13,7 +13,7 @@
           </div>
           <div class="header-handle">
             <AppButton :button-props="{ loading }" @click="loadRoles()">刷新</AppButton>
-            <AppButton :button-props="{ type: 'primary' }" @click="openCreate()">新增角色</AppButton>
+            <AppButton :button-props="{ type: 'primary' }" v-permission="'system:role:update'" @click="openCreate()">新增角色</AppButton>
           </div>
         </AppListHeader>
 
@@ -27,10 +27,13 @@
       </AppTableList>
     </div>
 
-    <RoleFormDialog
-      v-model="dialogVisible"
-      :record="selectedRecord"
-      @submit="handleSubmit"
+    <RoleFormDialog v-model="dialogVisible" :record="selectedRecord" @submit="handleSubmit" />
+    <GrantRoleMenusDialog
+      v-model="grantDialogVisible"
+      :role="selectedGrantRole"
+      :menus="grantMenus"
+      :checked-menu-ids="checkedMenuIds"
+      @submit="handleGrantMenus"
     />
   </section>
 </template>
@@ -39,6 +42,7 @@
   import { onMounted, ref } from 'vue';
   import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
   import RoleFormDialog from '@/components/forms/RoleFormDialog.vue';
+  import GrantRoleMenusDialog, { type GrantMenuTreeNode } from '@/components/forms/GrantRoleMenusDialog.vue';
   import { requests } from '@/api/requests';
   import type { RoleRecord } from '@/types/domain';
 
@@ -46,16 +50,30 @@
     id: number | string;
     code?: string;
     name?: string;
-    dataScope?: string;
     status?: number;
     remark?: string;
     createTime?: string;
     updateTime?: string;
   };
 
+  type MenuTreeItem = {
+    id: number | string;
+    name?: string;
+    path?: string;
+    children?: MenuTreeItem[];
+  };
+
+  type RoleGrantInfo = {
+    menuIds?: number[];
+  };
+
   const dialogVisible = ref(false);
+  const grantDialogVisible = ref(false);
   const keyword = ref('');
   const selectedRecord = ref<RoleRecord | null>(null);
+  const selectedGrantRole = ref<RoleRecord | null>(null);
+  const grantMenus = ref<GrantMenuTreeNode[]>([]);
+  const checkedMenuIds = ref<number[]>([]);
   const rows = ref<RoleRecord[]>([]);
   const loading = ref(false);
   const actionLoading = ref(false);
@@ -81,8 +99,9 @@
         key: 'actions',
         label: '操作',
         genre: '$action',
-        width: 200,
+        width: 280,
         actions: [
+          { key: 'grantMenus', label: '分配菜单', permissions: 'system:role:update' },
           { key: 'edit', label: '编辑', permissions: 'system:role:update' },
           { key: 'delete', label: '删除', permissions: 'system:role:delete', type: 'danger', visible: (row: RoleRecord) => !row.systemDefault }
         ]
@@ -98,10 +117,17 @@
       userNum: 0,
       userGroupNum: 0,
       systemDefault: ['systemAdmin', 'ADMIN', 'SUPER_ADMIN'].includes(item.code ?? ''),
-      dataScopeType: item.dataScope ?? '1',
       remark: item.remark ?? '',
       createdAt: item.createTime ?? '',
       updatedAt: item.updateTime ?? ''
+    };
+  }
+
+  function mapMenuTree(item: MenuTreeItem): GrantMenuTreeNode {
+    return {
+      id: String(item.id),
+      label: item.path ? `${item.name ?? ''} (${item.path})` : (item.name ?? ''),
+      children: Array.isArray(item.children) ? item.children.map(mapMenuTree) : []
     };
   }
 
@@ -131,7 +157,6 @@
       id: id ? Number(id) : undefined,
       code: payload.roleCode,
       name: payload.roleName,
-      dataScope: payload.dataScopeType ?? '1',
       status: 1,
       remark: payload.remark ?? ''
     };
@@ -145,8 +170,41 @@
     await loadRoles();
   }
 
+  async function openGrantMenus(row: RoleRecord) {
+    actionLoading.value = true;
+    try {
+      const [menuResult, grantInfoResult] = await Promise.all([
+        requests.menus.tree.request({}),
+        requests.roles.grantInfo.request({ id: Number(row.id) })
+      ]);
+      grantMenus.value = Array.isArray(menuResult) ? menuResult.map((item: MenuTreeItem) => mapMenuTree(item)) : [];
+      checkedMenuIds.value = Array.isArray((grantInfoResult as RoleGrantInfo | undefined)?.menuIds)
+        ? (((grantInfoResult as RoleGrantInfo | undefined)?.menuIds) ?? [])
+        : [];
+      selectedGrantRole.value = row;
+      grantDialogVisible.value = true;
+    } finally {
+      actionLoading.value = false;
+    }
+  }
+
+  async function handleGrantMenus(menuIds: number[]) {
+    if (!selectedGrantRole.value) {
+      return;
+    }
+    await requests.roles.grantMenus.request({
+      roleId: Number(selectedGrantRole.value.id),
+      menuIds
+    });
+    messageAlert({ message: '角色菜单分配成功' });
+  }
+
   async function handleAction(row: RoleRecord, action: Record<string, any>) {
     if (actionLoading.value) {
+      return;
+    }
+    if (action.key === 'grantMenus') {
+      await openGrantMenus(row);
       return;
     }
     if (action.key === 'edit') {

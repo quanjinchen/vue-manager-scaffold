@@ -26,11 +26,6 @@
             <AppSwitch v-model="form.systemDefault" />
           </el-form-item>
         </el-col>
-        <el-col :span="12">
-          <el-form-item label="数据范围" prop="dataScopeType">
-            <AppSelect v-model="form.dataScopeType" :list="dataScopeOptions" :select-props="{ placeholder: '请选择数据范围' }" />
-          </el-form-item>
-        </el-col>
         <el-col :span="24">
           <el-form-item label="备注" prop="remark">
             <AppInput v-model="form.remark" placeholder="请输入备注" :input-props="{ type: 'textarea', rows: 3 }" />
@@ -66,16 +61,10 @@
 
   const isEdit = computed(() => Boolean(props.record?.id));
 
-  const dataScopeOptions = [
-    { id: '1', name: '全部数据' },
-    { id: '5', name: '自定义范围' }
-  ];
-
   const form = reactive<Omit<RoleRecord, 'id' | 'createdAt' | 'updatedAt' | 'userNum' | 'userGroupNum'>>({
     roleCode: '',
     roleName: '',
     systemDefault: false,
-    dataScopeType: '1',
     remark: ''
   });
 
@@ -90,7 +79,6 @@
       form.roleCode = value?.roleCode ?? '';
       form.roleName = value?.roleName ?? '';
       form.systemDefault = value?.systemDefault ?? false;
-      form.dataScopeType = value?.dataScopeType ?? '1';
       form.remark = value?.remark ?? '';
     },
     { immediate: true }

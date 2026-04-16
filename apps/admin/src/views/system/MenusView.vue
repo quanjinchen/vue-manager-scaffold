@@ -10,7 +10,7 @@
         </div>
         <div class="header-handle">
           <AppButton :button-props="{ loading }" @click="loadData()">刷新</AppButton>
-          <AppButton :button-props="{ type: 'primary' }" @click="openCreate()">新增菜单</AppButton>
+          <AppButton :button-props="{ type: 'primary' }" v-permission="'system:menu:update'" @click="openCreate()">新增菜单</AppButton>
         </div>
       </AppListHeader>
     </header>
@@ -104,10 +104,10 @@
   };
 
   function mapMenuType(value?: string): 1 | 2 | 3 | 4 {
-    if (value === 'CATALOG') {
+    if (value === 'M' || value === 'CATALOG') {
       return 1;
     }
-    if (value === 'BUTTON') {
+    if (value === 'B' || value === 'BUTTON') {
       return 4;
     }
     return 2;
@@ -115,12 +115,12 @@
 
   function toBackendMenuType(value: number) {
     if (value === 1) {
-      return 'CATALOG';
+      return 'M';
     }
     if (value === 4) {
-      return 'BUTTON';
+      return 'B';
     }
-    return 'MENU';
+    return 'C';
   }
 
   function mapMenu(item: MenuTreeItem): MenuRecord {
@@ -142,7 +142,7 @@
   async function loadData() {
     loading.value = true;
     try {
-      const result = await requests.menus.tree.request();
+      const result = await requests.menus.tree.request({});
       menus.value = Array.isArray(result) ? result.map((item: MenuTreeItem) => mapMenu(item)) : [];
     } finally {
       loading.value = false;

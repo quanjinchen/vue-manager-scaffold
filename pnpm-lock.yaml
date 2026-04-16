@@ -95,6 +95,9 @@ importers:
 
   packages/api:
     dependencies:
+      '@vue-scaffold/utils':
+        specifier: workspace:*
+        version: link:../utils
       axios:
         specifier: ^1.11.0
         version: 1.14.0

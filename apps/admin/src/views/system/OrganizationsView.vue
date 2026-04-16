@@ -10,7 +10,7 @@
         </div>
         <div class="header-handle">
           <AppButton :button-props="{ loading }" @click="loadData()">刷新</AppButton>
-          <AppButton :button-props="{ type: 'primary' }" @click="openCreate()">新增组织</AppButton>
+          <AppButton :button-props="{ type: 'primary' }" v-permission="'system:org:update'" @click="openCreate()">新增组织</AppButton>
         </div>
       </AppListHeader>
     </header>
@@ -38,6 +38,13 @@
       :organizations="organizations"
       @submit="handleSubmit"
     />
+    <GrantOrgUsersDialog
+      v-model="grantDialogVisible"
+      :organization="selectedGrantOrg"
+      :users="userOptions"
+      :checked-user-ids="checkedUserIds"
+      @submit="handleGrantUsers"
+    />
   </section>
 </template>
 
@@ -45,6 +52,7 @@
   import { computed, onMounted, ref } from 'vue';
   import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
   import OrganizationFormDialog from '@/components/forms/OrganizationFormDialog.vue';
+  import GrantOrgUsersDialog, { type GrantUserOption } from '@/components/forms/GrantOrgUsersDialog.vue';
   import { requests } from '@/api/requests';
   import type { OrganizationRecord } from '@/types/domain';
 
@@ -58,11 +66,25 @@
     children?: OrgTreeItem[];
   };
 
+  type UserPageItem = {
+    id: number | string;
+    username?: string;
+    nickname?: string;
+  };
+
+  type OrgUserInfo = {
+    userId?: number;
+  };
+
   const organizations = ref<OrganizationRecord[]>([]);
   const selectedRecord = ref<OrganizationRecord | null>(null);
+  const selectedGrantOrg = ref<OrganizationRecord | null>(null);
   const dialogVisible = ref(false);
+  const grantDialogVisible = ref(false);
   const loading = ref(false);
   const actionLoading = ref(false);
+  const userOptions = ref<GrantUserOption[]>([]);
+  const checkedUserIds = ref<number[]>([]);
 
   const flatOrganizations = computed(() => {
     const walk = (items: OrganizationRecord[]): OrganizationRecord[] =>
@@ -80,8 +102,9 @@
         key: 'actions',
         label: '操作',
         genre: '$action',
-        width: 200,
+        width: 280,
         actions: [
+          { key: 'grantUsers', label: '分配用户', permissions: 'system:org:update' },
           { key: 'edit', label: '编辑', permissions: 'system:org:update' },
           { key: 'delete', label: '删除', permissions: 'system:org:delete', type: 'danger' }
         ]
@@ -101,10 +124,17 @@
     };
   }
 
+  function mapUserOption(item: UserPageItem): GrantUserOption {
+    return {
+      id: String(item.id),
+      name: item.nickname || item.username || ''
+    };
+  }
+
   async function loadData() {
     loading.value = true;
     try {
-      const result = await requests.organizations.tree.request();
+      const result = await requests.organizations.tree.request({});
       organizations.value = Array.isArray(result) ? result.map((item: OrgTreeItem) => mapOrganization(item)) : [];
     } finally {
       loading.value = false;
@@ -150,8 +180,47 @@
     await loadData();
   }
 
+  async function openGrantUsers(row: OrganizationRecord) {
+    actionLoading.value = true;
+    try {
+      const [userResult, orgUserResult] = await Promise.all([
+        requests.users.list.request({
+          pageNum: 1,
+          pageSize: 100,
+          keyword: ''
+        }),
+        requests.orgUsers.list.request({
+          orgId: Number(row.id)
+        })
+      ]);
+      userOptions.value = Array.isArray(userResult?.records) ? userResult.records.map((item: UserPageItem) => mapUserOption(item)) : [];
+      checkedUserIds.value = Array.isArray(orgUserResult)
+        ? orgUserResult.map((item: OrgUserInfo) => Number(item.userId)).filter(item => !Number.isNaN(item))
+        : [];
+      selectedGrantOrg.value = row;
+      grantDialogVisible.value = true;
+    } finally {
+      actionLoading.value = false;
+    }
+  }
+
+  async function handleGrantUsers(userIds: number[]) {
+    if (!selectedGrantOrg.value) {
+      return;
+    }
+    await requests.orgUsers.grant.request({
+      orgId: Number(selectedGrantOrg.value.id),
+      userIds
+    });
+    messageAlert({ message: '组织用户分配成功' });
+  }
+
   async function handleAction(row: OrganizationRecord, action: Record<string, any>) {
     if (actionLoading.value) {
+      return;
+    }
+    if (action.key === 'grantUsers') {
+      await openGrantUsers(row);
       return;
     }
     if (action.key === 'edit') {

@@ -43,7 +43,6 @@ export type RoleRecord = {
   userNum: number;
   userGroupNum: number;
   systemDefault: boolean;
-  dataScopeType?: string;
   remark?: string;
   createdAt: string;
   updatedAt: string;

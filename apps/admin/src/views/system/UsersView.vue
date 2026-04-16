@@ -13,7 +13,7 @@
           </div>
           <div class="header-handle">
             <AppButton :button-props="{ loading }" @click="refreshPageData()">刷新</AppButton>
-            <AppButton :button-props="{ type: 'primary' }" @click="openCreate()">新增用户</AppButton>
+          <AppButton :button-props="{ type: 'primary' }" v-permission="'system:user:add'" @click="openCreate()">新增用户</AppButton>
           </div>
         </AppListHeader>
 
@@ -33,6 +33,13 @@
       :organizations="organizations"
       @submit="handleSubmit"
     />
+    <GrantUserRolesDialog
+      v-model="grantDialogVisible"
+      :user="selectedGrantUser"
+      :roles="roleOptions"
+      :checked-role-ids="checkedRoleIds"
+      @submit="handleGrantRoles"
+    />
   </section>
 </template>
 
@@ -41,6 +48,7 @@
   import { userStatusOptions } from '@vue-scaffold/constants';
   import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
   import UserFormDialog from '@/components/forms/UserFormDialog.vue';
+  import GrantUserRolesDialog, { type GrantRoleOption } from '@/components/forms/GrantUserRolesDialog.vue';
   import { requests } from '@/api/requests';
   import type { OrganizationRecord, UserRecord } from '@/types/domain';
 
@@ -63,10 +71,24 @@
     children?: OrgTreeItem[];
   };
 
+  type RolePageItem = {
+    id: number | string;
+    code?: string;
+    name?: string;
+  };
+
+  type UserRoleInfo = {
+    roleId?: number;
+  };
+
   const dialogVisible = ref(false);
+  const grantDialogVisible = ref(false);
   const keyword = ref('');
   const selectedRecord = ref<UserRecord | null>(null);
+  const selectedGrantUser = ref<UserRecord | null>(null);
   const organizations = ref<OrganizationRecord[]>([]);
+  const roleOptions = ref<GrantRoleOption[]>([]);
+  const checkedRoleIds = ref<number[]>([]);
   const rows = ref<UserRecord[]>([]);
   const loading = ref(false);
   const actionLoading = ref(false);
@@ -75,7 +97,7 @@
     columns: [
       { key: 'ordinal', label: '#', genre: '$ordinal', width: 64 },
       { key: 'userName', prop: 'userName', label: '用户名', minWidth: 160 },
-      { key: 'name', prop: 'fullName', label: '姓名', minWidth: 180 },
+      { key: 'name', prop: 'fullName', label: '昵称', minWidth: 180 },
       { key: 'phoneNum', prop: 'phoneNum', label: '手机号', minWidth: 160 },
       { key: 'email', prop: 'email', label: '邮箱', minWidth: 220 },
       {
@@ -98,8 +120,9 @@
         key: 'actions',
         label: '操作',
         genre: '$action',
-        width: 300,
+        width: 380,
         actions: [
+          { key: 'grantRoles', label: '分配角色', permissions: 'system:user:update' },
           { key: 'edit', label: '编辑', permissions: 'system:user:update' },
           { key: 'resetPassword', label: '重置密码', permissions: 'system:user:resetPassword', type: 'warning' },
           { key: 'delete', label: '删除', permissions: 'system:user:delete', type: 'danger' }
@@ -150,6 +173,13 @@
     };
   }
 
+  function mapRoleOption(item: RolePageItem): GrantRoleOption {
+    return {
+      id: String(item.id),
+      name: item.name || item.code || ''
+    };
+  }
+
   async function loadUsers() {
     loading.value = true;
     try {
@@ -168,19 +198,19 @@
   }
 
   async function loadOrganizations() {
-    loading.value = true;
-    try {
-      const result = await requests.organizations.tree.request();
-      organizations.value = Array.isArray(result) ? result.map((item: OrgTreeItem) => mapOrganization(item)) : [];
-    } finally {
-      loading.value = false;
-    }
+      loading.value = true;
+      try {
+        const result = await requests.organizations.tree.request({});
+        organizations.value = Array.isArray(result) ? result.map((item: OrgTreeItem) => mapOrganization(item)) : [];
+      } finally {
+        loading.value = false;
+      }
   }
 
   async function refreshPageData() {
     loading.value = true;
     try {
-      const orgResult = await requests.organizations.tree.request();
+      const orgResult = await requests.organizations.tree.request({});
       organizations.value = Array.isArray(orgResult) ? orgResult.map((item: OrgTreeItem) => mapOrganization(item)) : [];
       const orgNameMap = buildOrgNameMap(organizations.value);
       const userResult = await requests.users.list.request({
@@ -215,14 +245,56 @@
       await requests.users.update.request(requestBody);
       messageAlert({ message: '用户更新成功' });
     } else {
-      await requests.users.save.request(requestBody);
+      await requests.users.save.request({
+        ...requestBody,
+        password: '123456'
+      });
       messageAlert({ message: '用户创建成功' });
     }
     await refreshPageData();
   }
 
+  async function openGrantRoles(row: UserRecord) {
+    actionLoading.value = true;
+    try {
+      const [roleResult, userRoleResult] = await Promise.all([
+        requests.roles.list.request({
+          pageNum: 1,
+          pageSize: 100,
+          keyword: ''
+        }),
+        requests.userRoles.list.request({
+          userId: Number(row.id)
+        })
+      ]);
+      roleOptions.value = Array.isArray(roleResult?.records) ? roleResult.records.map((item: RolePageItem) => mapRoleOption(item)) : [];
+      checkedRoleIds.value = Array.isArray(userRoleResult)
+        ? userRoleResult.map((item: UserRoleInfo) => Number(item.roleId)).filter(item => !Number.isNaN(item))
+        : [];
+      selectedGrantUser.value = row;
+      grantDialogVisible.value = true;
+    } finally {
+      actionLoading.value = false;
+    }
+  }
+
+  async function handleGrantRoles(roleIds: number[]) {
+    if (!selectedGrantUser.value) {
+      return;
+    }
+    await requests.userRoles.grant.request({
+      userId: Number(selectedGrantUser.value.id),
+      roleIds
+    });
+    messageAlert({ message: '用户角色分配成功' });
+  }
+
   async function handleAction(row: UserRecord, action: Record<string, any>) {
     if (actionLoading.value) {
+      return;
+    }
+    if (action.key === 'grantRoles') {
+      await openGrantRoles(row);
       return;
     }
     if (action.key === 'edit') {

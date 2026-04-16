@@ -53,10 +53,13 @@ function collectPermissions(menuList: Record<string, any>[] = [], initialPermiss
 
 function mapMenuType(menuType?: string | number) {
   switch (String(menuType ?? '').toUpperCase()) {
+    case 'M':
     case 'CATALOG':
       return 1 as const;
+    case 'C':
     case 'MENU':
       return 2 as const;
+    case 'B':
     case 'BUTTON':
       return 4 as const;
     default:
@@ -84,8 +87,10 @@ function normalizeAccessPayload(token: string, loginInfo: LoginInfoResponse, acc
   const userInfo = rawLoginInfo.userInfo ?? rawLoginInfo;
   const menuList = Array.isArray(rawLoginInfo.menus)
     ? rawLoginInfo.menus
-    : Array.isArray(userInfo.menuList)
-      ? userInfo.menuList
+    : Array.isArray(userInfo.menus)
+      ? userInfo.menus
+      : Array.isArray(userInfo.menuList)
+        ? userInfo.menuList
       : [];
   const permissions = rawLoginInfo.permissions?.length
     ? rawLoginInfo.permissions
