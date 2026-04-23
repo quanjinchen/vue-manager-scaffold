@@ -109,10 +109,12 @@ function normalizeAccessPayload(token: string, loginInfo: LoginInfoResponse, acc
 }
 
 export async function loginByPassword(params: Record<string, string>) {
-  const loginResult = await requests.login.accountLogin.request(params, {
-    customOptions: {
-      alertError: false,
-      needLogin: false
+  const loginResult = await requests.login.accountLogin('/api/admin/login', params, {
+    custom: {
+      customOptions: {
+        alertError: false,
+        needLogin: false
+      }
     }
   });
 
@@ -121,14 +123,16 @@ export async function loginByPassword(params: Record<string, string>) {
     throw new Error('登录响应缺少 token');
   }
 
-  const loginInfo = await requests.login.getLoginInfo.request({}, {
-    axiosOptions: {
+  const loginInfo = await requests.login.getLoginInfo('/api/admin/get-login-info', {}, {
+    axios: {
       headers: {
         Authorization: token
       }
     },
-    customOptions: {
-      alertError: false
+    custom: {
+      customOptions: {
+        alertError: false
+      }
     }
   });
 

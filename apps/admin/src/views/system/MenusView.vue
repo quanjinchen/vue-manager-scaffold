@@ -142,7 +142,7 @@
   async function loadData() {
     loading.value = true;
     try {
-      const result = await requests.menus.tree.request({});
+      const result = await requests.menus.tree('/api/menu/list-all-menu-tree', {});
       menus.value = Array.isArray(result) ? result.map((item: MenuTreeItem) => mapMenu(item)) : [];
     } finally {
       loading.value = false;
@@ -180,10 +180,10 @@
       visible: payload.enabled
     };
     if (id) {
-      await requests.menus.update.request(requestBody);
+      await requests.menus.update('/api/menu/update-menu', requestBody);
       messageAlert({ message: '菜单更新成功' });
     } else {
-      await requests.menus.save.request(requestBody);
+      await requests.menus.save('/api/menu/create-menu', requestBody);
       messageAlert({ message: '菜单创建成功' });
     }
     await loadData();
@@ -206,7 +206,7 @@
       actionLoading.value = true;
       try {
         await messageConfirm(`确认删除菜单“${row.menuName}”吗？`);
-        await requests.menus.delete.request({
+        await requests.menus.delete('/api/menu/delete-menu', {
           menuId: Number(row.id)
         });
         messageAlert({ message: '菜单删除成功' });

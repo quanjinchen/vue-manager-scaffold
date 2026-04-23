@@ -28,6 +28,10 @@ export function removeStorage(key: string) {
   getBrowserStorage()?.removeItem(key);
 }
 
+export function cleartStorage() {
+  getBrowserStorage()?.clear();
+}
+
 export function hasStoredPermission(permission?: string | string[]) {
   if (!permission) {
     return true;

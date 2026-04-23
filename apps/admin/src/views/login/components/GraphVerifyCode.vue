@@ -22,10 +22,12 @@ import { requests } from '@/api/requests';
     detail: {} as CaptchaDetail,
     async init() {
       this.verifyCode = '';
-      const data = await requests.login.getCaptcha.request({}, {
-        customOptions: {
-          alertError: false,
-          needLogin: false
+      const data = await requests.login.getCaptcha('/api/admin/get-captcha', {}, {
+        custom: {
+          customOptions: {
+            alertError: false,
+            needLogin: false
+          }
         }
       });
       this.detail = data || {};

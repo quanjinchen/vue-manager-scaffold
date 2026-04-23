@@ -184,7 +184,7 @@
     loading.value = true;
     try {
       const orgNameMap = buildOrgNameMap(organizations.value);
-      const result = await requests.users.list.request({
+      const result = await requests.users.list('/api/user/list-user', {
         pageNum: 1,
         pageSize: 100,
         keyword: keyword.value
@@ -200,7 +200,7 @@
   async function loadOrganizations() {
       loading.value = true;
       try {
-        const result = await requests.organizations.tree.request({});
+        const result = await requests.organizations.tree('/api/org/list-all-org-tree', {});
         organizations.value = Array.isArray(result) ? result.map((item: OrgTreeItem) => mapOrganization(item)) : [];
       } finally {
         loading.value = false;
@@ -210,10 +210,10 @@
   async function refreshPageData() {
     loading.value = true;
     try {
-      const orgResult = await requests.organizations.tree.request({});
+      const orgResult = await requests.organizations.tree('/api/org/list-all-org-tree', {});
       organizations.value = Array.isArray(orgResult) ? orgResult.map((item: OrgTreeItem) => mapOrganization(item)) : [];
       const orgNameMap = buildOrgNameMap(organizations.value);
-      const userResult = await requests.users.list.request({
+      const userResult = await requests.users.list('/api/user/list-user', {
         pageNum: 1,
         pageSize: 100,
         keyword: keyword.value
@@ -242,10 +242,10 @@
       status: payload.status === 'active' ? 1 : 0
     };
     if (id) {
-      await requests.users.update.request(requestBody);
+      await requests.users.update('/api/user/update-user', requestBody);
       messageAlert({ message: '用户更新成功' });
     } else {
-      await requests.users.save.request({
+      await requests.users.save('/api/user/create-user', {
         ...requestBody,
         password: '123456'
       });
@@ -258,12 +258,12 @@
     actionLoading.value = true;
     try {
       const [roleResult, userRoleResult] = await Promise.all([
-        requests.roles.list.request({
+        requests.roles.list('/api/role/list-role', {
           pageNum: 1,
           pageSize: 100,
           keyword: ''
         }),
-        requests.userRoles.list.request({
+        requests.userRoles.list('/api/user-role/list-user-role', {
           userId: Number(row.id)
         })
       ]);
@@ -282,7 +282,7 @@
     if (!selectedGrantUser.value) {
       return;
     }
-    await requests.userRoles.grant.request({
+    await requests.userRoles.grant('/api/user-role/grant-user-roles', {
       userId: Number(selectedGrantUser.value.id),
       roleIds
     });
@@ -306,7 +306,7 @@
       actionLoading.value = true;
       try {
         await messageConfirm(`确认重置用户“${row.fullName || row.userName}”的密码吗？`);
-        await requests.users.resetPassword.request({
+        await requests.users.resetPassword('/api/user/reset-user-password', {
           userId: Number(row.id)
         });
         messageAlert({ message: '密码重置成功' });
@@ -320,7 +320,7 @@
       actionLoading.value = true;
       try {
         await messageConfirm(`确认删除用户“${row.fullName || row.userName}”吗？`);
-        await requests.users.delete.request({
+        await requests.users.delete('/api/user/delete-user', {
           userId: Number(row.id)
         });
         messageAlert({ message: '用户删除成功' });

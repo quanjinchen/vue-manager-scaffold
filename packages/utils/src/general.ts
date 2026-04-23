@@ -7,15 +7,16 @@ function isObject(value: unknown): value is Record<string, any> {
 export function deepMerge<T extends Record<string, any>>(...sources: T[]): T {
   return sources.reduce((acc, source) => {
     Object.entries(source || {}).forEach(([key, value]) => {
+      const nextAcc = acc as Record<string, any>;
       if (Array.isArray(value)) {
-        acc[key] = value.slice();
+        nextAcc[key] = value.slice();
         return;
       }
-      if (isObject(value) && isObject(acc[key])) {
-        acc[key] = deepMerge(acc[key], value);
+      if (isObject(value) && isObject(nextAcc[key])) {
+        nextAcc[key] = deepMerge(nextAcc[key], value);
         return;
       }
-      acc[key] = value;
+      nextAcc[key] = value;
     });
     return acc;
   }, {} as T);

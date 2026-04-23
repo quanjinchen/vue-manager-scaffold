@@ -69,9 +69,11 @@ export const useAuthStore = defineStore(
     // 优先通知后端注销当前 token；即使后端请求失败，也要兜底清理前端本地登录态。
     async function logout() {
       try {
-        await requests.login.logout.request({}, {
-          customOptions: {
-            alertError: false
+        await requests.login.logout('/api/admin/logout', {}, {
+          custom: {
+            customOptions: {
+              alertError: false
+            }
           }
         });
       } finally {

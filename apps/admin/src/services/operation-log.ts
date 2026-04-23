@@ -31,11 +31,10 @@ function normalizePageResult(result: OperationLogPageResponse | undefined, pageN
 }
 
 export async function getOperationLogPage(pageNum = 1, pageSize = 10) {
-  const result = await requests.operationLogs.page.request({
+  const result = await requests.operationLogs.page('/api/operation-log/list-operation-log', {
     pageNum,
     pageSize
   });
 
   return normalizePageResult(result, pageNum, pageSize);
 }
-
