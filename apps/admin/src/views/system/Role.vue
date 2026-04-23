@@ -1,5 +1,5 @@
 <template>
-  <section class="RolesView">
+  <section class="Role">
     <div class="surface-card table-wrap">
       <AppTableList>
         <AppListHeader>
@@ -38,7 +38,7 @@
   </section>
 </template>
 
-<script setup lang="ts" name="RolesView">
+<script setup lang="ts" name="Role">
   import { onMounted, ref } from 'vue';
   import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
   import RoleFormDialog from '@/components/forms/RoleFormDialog.vue';
@@ -233,7 +233,7 @@
 </script>
 
 <style scoped lang="scss">
-  .RolesView {
+  .Role {
     display: grid;
     gap: 16px;
   }

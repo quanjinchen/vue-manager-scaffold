@@ -1,20 +1,20 @@
 import { h } from 'vue';
 import type { RouteRecordRaw } from 'vue-router';
 import AdminLayout from '@/layouts/AdminLayout.vue';
-import LoginView from '@/views/login/LoginView.vue';
-import DashboardView from '@/views/dashboard/DashboardView.vue';
-import MenusView from '@/views/system/MenusView.vue';
-import OperationLogsView from '@/views/system/OperationLogsView.vue';
-import OrganizationsView from '@/views/system/OrganizationsView.vue';
-import UsersView from '@/views/system/UsersView.vue';
-import RolesView from '@/views/system/RolesView.vue';
+import Login from '@/views/login/Login.vue';
+import Dashboard from '@/views/dashboard/Dashboard.vue';
+import Menu from '@/views/system/Menu.vue';
+import OperationLog from '@/views/system/OperationLog.vue';
+import Organization from '@/views/organization/Organization.vue';
+import User from '@/views/user/User.vue';
+import Role from '@/views/system/Role.vue';
 
 // 固定路由：无论是否登录、是否有权限都需要提前存在的页面。
 export const constantRoutes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
-    component: LoginView,
+    component: Login,
     meta: {
       title: '登录',
       noAuth: true
@@ -46,7 +46,7 @@ export const localRoutes: RouteRecordRaw[] = [
   {
     path: '/system/operation-log',
     name: 'system-operation-log',
-    component: OperationLogsView,
+    component: OperationLog,
     meta: {
       title: '日志审计',
       icon: 'Document',
@@ -54,9 +54,9 @@ export const localRoutes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/system/user',
-    name: 'system-user',
-    component: UsersView,
+    path: '/user',
+    name: 'user',
+    component: User,
     meta: {
       title: '用户列表',
       icon: 'User',
@@ -64,9 +64,9 @@ export const localRoutes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/system/org',
-    name: 'system-org',
-    component: OrganizationsView,
+    path: '/organization',
+    name: 'organization',
+    component: Organization,
     meta: {
       title: '组织管理',
       icon: 'Document',
@@ -76,7 +76,7 @@ export const localRoutes: RouteRecordRaw[] = [
   {
     path: '/system/menu',
     name: 'system-menu',
-    component: MenusView,
+    component: Menu,
     meta: {
       title: '平台菜单',
       icon: 'Setting',
@@ -86,7 +86,7 @@ export const localRoutes: RouteRecordRaw[] = [
   {
     path: '/system/role',
     name: 'system-role',
-    component: RolesView,
+    component: Role,
     meta: {
       title: '平台角色',
       icon: 'Setting',
@@ -96,7 +96,7 @@ export const localRoutes: RouteRecordRaw[] = [
   {
     path: '/index/baseInfo',
     name: 'index-baseInfo',
-    component: DashboardView,
+    component: Dashboard,
     meta: {
       title: '基础信息',
       icon: 'House',

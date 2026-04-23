@@ -23,12 +23,8 @@ import { requests } from '@/api/requests';
     async init() {
       this.verifyCode = '';
       const data = await requests.login.getCaptcha('/api/admin/get-captcha', {}, {
-        custom: {
-          customOptions: {
-            alertError: false,
-            needLogin: false
-          }
-        }
+        alertError: false,
+        needLogin: false
       });
       this.detail = data || {};
       this.uuid = data?.uuid || '';

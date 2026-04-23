@@ -1,5 +1,5 @@
 <template>
-  <section class="OrganizationsView">
+  <section class="Organization">
     <header class="toolbar surface-card">
       <AppListHeader>
         <div class="header-search">
@@ -48,7 +48,7 @@
   </section>
 </template>
 
-<script setup lang="ts" name="OrganizationsView">
+<script setup lang="ts" name="Organization">
   import { computed, onMounted, ref } from 'vue';
   import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
   import OrganizationFormDialog from '@/components/forms/OrganizationFormDialog.vue';
@@ -247,7 +247,7 @@
 </script>
 
 <style scoped lang="scss">
-  .OrganizationsView {
+  .Organization {
     display: grid;
     gap: 20px;
   }

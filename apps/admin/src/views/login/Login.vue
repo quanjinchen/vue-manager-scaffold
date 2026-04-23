@@ -13,7 +13,7 @@
   </main>
 </template>
 
-<script setup lang="ts" name="LoginView">
+<script setup lang="ts" name="Login">
   import { onMounted, reactive, ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { messageAlert } from '@vue-scaffold/utils';

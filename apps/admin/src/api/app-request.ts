@@ -1,6 +1,5 @@
 import { RequestClient } from '@vue-scaffold/api';
-import { STORAGE_KEYS } from '@vue-scaffold/constants';
-import { generateUuid, hasStoredPermission, readStorage, removeStorage, cleartStorage } from '@vue-scaffold/utils';
+import { generateUuid, hasStoredPermission, readStorage, cleartStorage } from '@vue-scaffold/utils';
 import { ElMessage } from 'element-plus';
 import type { AxiosRequestConfig } from 'axios';
 import { getRouterInstance } from '@/router/router-instance';
@@ -20,10 +19,17 @@ export type AppRequestMethodOptions = AppRequestCustomOptions & {
   axiosOptions?: AxiosRequestConfig;
 };
 
+export type AppRequestUploadData = Record<string, any> & {
+  file: Blob | File;
+};
+
+export type AppRequestDownloadOptions = AppRequestMethodOptions & {
+  responseReturn?: 'body' | 'raw';
+};
 
 // admin 端当前请求约定直接写在业务层，不再额外暴露运行时配置入口。
-const requestClient = createRequestClient();
 const requestBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+const requestClient = createRequestClient();
 
 
 function resolveBusinessMessage(response: any) {
@@ -94,12 +100,17 @@ function createRequestClient() {
 
 function buildRequestHeaders(
   needLogin: boolean,
-  customHeaders: Record<string, any> = {}
+  customHeaders: Record<string, any> = {},
+  defaultContentType = 'application/json'
 ) {
-  const token = needLogin ? readStorage<string>(STORAGE_KEYS.token, '') : '';
+  const token = needLogin ? readStorage<string>('token', '') : '';
 
   return {
-    'Content-Type': 'application/json',
+    ...(defaultContentType
+      ? {
+        'Content-Type': defaultContentType
+      }
+      : {}),
     // 方便后端日志串联一次请求，也方便排查网关或服务间调用链。
     'X-REQUEST-ID': generateUuid(),
     // 预留给后端做签名、重放校验或调试分析使用。
@@ -112,6 +123,85 @@ function buildRequestHeaders(
       : {}),
     ...customHeaders
   };
+}
+
+function unwrapResponseBody(response: any) {
+  return response && typeof response === 'object' && 'data' in response
+    ? response.data
+    : response;
+}
+
+function resolveRequestResult(
+  response: any,
+  options: {
+    alertSuccess?: boolean;
+    skipBusinessError?: boolean;
+  } = {}
+) {
+  const {
+    alertSuccess = false,
+    skipBusinessError = false
+  } = options;
+  const responseData = unwrapResponseBody(response);
+  const businessCode = resolveBusinessCode(response);
+  const businessMessage = resolveBusinessMessage(responseData);
+
+  if (!skipBusinessError && businessCode != undefined && businessCode !== 0) {
+    throw { response };
+  }
+
+  if (alertSuccess) {
+    successHandler(businessMessage || '操作成功');
+  }
+
+  // 兼容历史返回习惯：如果后端响应还是 { code, data, message }，优先把 data 交给业务层。
+  // 这样页面层大多数场景可以直接拿到业务数据，而不用每次都写 response.data。
+  if (responseData && typeof responseData === 'object' && 'data' in responseData) {
+    return responseData.data;
+  }
+
+  return responseData;
+}
+
+function handleRequestError(error: any, alertError = true) {
+  const response = error?.response;
+  const responseBody = unwrapResponseBody(response);
+  const businessCode = resolveBusinessCode(responseBody);
+  const businessMessage = resolveBusinessMessage(responseBody);
+  const statusCode = Number(businessCode ?? response?.status);
+
+  if (response) {
+    if ([401, 403].includes(statusCode)) {
+      handleError(businessMessage || '登录失效');
+      setTimeout(() => {
+        handleUnauthorized();
+      }, 500);
+      return;
+    }
+
+    if (alertError) {
+      errorHandler(businessMessage || '请求失败');
+    }
+    return;
+  }
+
+  if (error?.message?.includes?.('timeout')) {
+    if (alertError) {
+      errorHandler('请求超时');
+    }
+    return;
+  }
+
+  if (error?.request) {
+    if (alertError) {
+      errorHandler('网络错误');
+    }
+    return;
+  }
+
+  if (alertError) {
+    errorHandler(error?.message || '未知错误，请联系管理员');
+  }
 }
 
 function buildPathUrl(url: string, params: Record<string, any>) {
@@ -180,57 +270,105 @@ async function runAppRequest(
       responseReturn: 'body'
     });
 
-    const responseData = response && typeof response === 'object' && 'data' in response
-      ? response.data
-      : response;
-    const businessCode = resolveBusinessCode(response);
-    const businessMessage = resolveBusinessMessage(responseData);
+    return resolveRequestResult(response, {
+      alertSuccess,
+      skipBusinessError
+    });
+  } catch (error: any) {
+    handleRequestError(error, alertError);
+    throw error;
+  }
+}
 
-    if (!skipBusinessError && businessCode != undefined && businessCode !== 0) {
-      Promise.reject({ response })
-    }
+async function runUploadRequest(
+  url: string = '',
+  data: AppRequestUploadData,
+  options: AppRequestMethodOptions = {}
+) {
+  const {
+    axiosOptions = {},
+    ...customOptions
+  } = options;
+
+  const {
+    alertSuccess = false,
+    alertError = true,
+    needLogin = true,
+    permissions,
+    skipBusinessError = false
+  } = customOptions;
+
+  if (!hasStoredPermission(permissions)) {
+    return undefined;
+  }
+
+  const { headers: customHeaders = {}, ...restAxiosOptions } = axiosOptions;
+
+  try {
+    const response = await requestClient.upload(url, data, {
+      ...restAxiosOptions,
+      headers: buildRequestHeaders(needLogin, customHeaders as Record<string, any>, ''),
+      responseReturn: 'body'
+    });
+
+    return resolveRequestResult(response, {
+      alertSuccess,
+      skipBusinessError
+    });
+  } catch (error: any) {
+    handleRequestError(error, alertError);
+    throw error;
+  }
+}
+
+async function runDownloadRequest(
+  url: string = '',
+  params: Record<string, any> = {},
+  options: AppRequestDownloadOptions = {}
+) {
+  const {
+    axiosOptions = {},
+    responseReturn = 'body',
+    ...customOptions
+  } = options;
+
+  const {
+    alertSuccess = false,
+    alertError = true,
+    needLogin = true,
+    permissions,
+    appendPathOnGet = false
+  } = customOptions;
+
+  if (!hasStoredPermission(permissions)) {
+    return undefined;
+  }
+
+  let finalUrl = url ?? '';
+  let finalParams = { ...params };
+  if (appendPathOnGet) {
+    const pathResult = buildPathUrl(finalUrl, finalParams);
+    finalUrl = pathResult.url;
+    finalParams = pathResult.params;
+  }
+
+  const { headers: customHeaders = {}, ...restAxiosOptions } = axiosOptions;
+
+  try {
+    const response = await requestClient.download(finalUrl, {
+      ...restAxiosOptions,
+      headers: buildRequestHeaders(needLogin, customHeaders as Record<string, any>),
+      params: finalParams,
+      responseReturn
+    });
 
     if (alertSuccess) {
-      successHandler(businessMessage || '操作成功');
+      successHandler('下载成功');
     }
 
-    // 兼容历史返回习惯：如果后端响应还是 { code, data, message }，优先把 data 交给业务层。
-    // 这样页面层大多数场景可以直接拿到业务数据，而不用每次都写 response.data。
-    if (responseData && typeof responseData === 'object' && 'data' in responseData) {
-      return responseData.data;
-    }
-
-    return responseData;
+    return responseReturn === 'raw' ? response : unwrapResponseBody(response);
   } catch (error: any) {
-    if (error?.response) {
-      const { response } = error
-      const businessCode = resolveBusinessCode(response);
-      const businessMessage = resolveBusinessMessage(response);
-      if (businessCode != undefined) {
-        if ([401, 403].includes(Number(businessCode))) {
-          handleError(businessMessage || '登录失效');
-          setTimeout(() => {
-            handleUnauthorized();
-          }, 500);
-        } else if (alertError) {
-          errorHandler(businessMessage || '请求失败');
-        }
-
-      }
-    } if (error?.message?.includes?.('timeout')) {
-      if (alertError) {
-        errorHandler('请求超时');
-      }
-    }
-
-    else if (error?.request) {
-      if (alertError) {
-        errorHandler('网络错误');
-      }
-    } else if (alertError) {
-      errorHandler(error.message);
-    }
-
+    handleRequestError(error, alertError);
     throw error;
   }
 }
@@ -255,5 +393,11 @@ export const appRequest = {
   },
   patch(url: string, params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) {
     return runAppRequest('patch', url, params, options);
+  },
+  upload(url: string, data: AppRequestUploadData, options: AppRequestMethodOptions = {}) {
+    return runUploadRequest(url, data, options);
+  },
+  download(url: string, params: Record<string, any> = {}, options: AppRequestDownloadOptions = {}) {
+    return runDownloadRequest(url, params, options);
   }
 };

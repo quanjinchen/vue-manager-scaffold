@@ -2,8 +2,8 @@
   <section class="PieSummaryCard-root surface-card">
     <header class="card-head">
       <div>
-        <h3>浏览器 / 操作系统统计</h3>
-        <p>查看当前访问终端分布情况</p>
+        <h3>{{ title }}</h3>
+        <p>{{ subtitle }}</p>
       </div>
       <el-radio-group v-model="currentValue" size="small" @change="emit('change', currentValue)">
         <el-radio-button v-for="item in tabs" :key="item.id" :value="item.id">{{ item.name }}</el-radio-button>
@@ -53,6 +53,8 @@
   };
 
   const props = defineProps<{
+    title: string;
+    subtitle: string;
     list: ListItem[];
     total: number;
     tabs: TabItem[];

@@ -110,12 +110,8 @@ function normalizeAccessPayload(token: string, loginInfo: LoginInfoResponse, acc
 
 export async function loginByPassword(params: Record<string, string>) {
   const loginResult = await requests.login.accountLogin('/api/admin/login', params, {
-    custom: {
-      customOptions: {
-        alertError: false,
-        needLogin: false
-      }
-    }
+    alertError: false,
+    needLogin: false
   });
 
   const token = String(loginResult?.token ?? '');
@@ -124,16 +120,12 @@ export async function loginByPassword(params: Record<string, string>) {
   }
 
   const loginInfo = await requests.login.getLoginInfo('/api/admin/get-login-info', {}, {
-    axios: {
+    axiosOptions: {
       headers: {
         Authorization: token
       }
     },
-    custom: {
-      customOptions: {
-        alertError: false
-      }
-    }
+    alertError: false
   });
 
   return normalizeAccessPayload(token, loginInfo || {}, params.account);

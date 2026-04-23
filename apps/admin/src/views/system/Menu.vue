@@ -1,5 +1,5 @@
 <template>
-  <section class="MenusView">
+  <section class="Menu">
     <header class="toolbar surface-card">
       <AppListHeader>
         <div class="header-search">
@@ -15,22 +15,26 @@
       </AppListHeader>
     </header>
 
-    <div class="surface-card table-wrap">
-      <AppTable :table-props="{ data: flatMenus, rowKey: 'id' }" :table-info="tableInfo" :loading="loading" @handle-click="handleAction">
-        <template #icon="{ row }">
-          <AppIcon v-if="row.icon" :name="row.icon" />
-          <span v-else>-</span>
-        </template>
-      </AppTable>
-    </div>
+    <section class="content surface-card">
+      <AppTable
+        :table-props="{ data: rows }"
+        :table-info="tableInfo"
+        :loading="loading"
+        @handle-click="handleAction"
+      />
+    </section>
 
-    <MenuFormDialog v-model="dialogVisible" :record="selectedRecord" :menus="menus" @submit="handleSubmit" />
+    <MenuFormDialog
+      v-model="dialogVisible"
+      :record="selectedRecord"
+      :menus="rows"
+      @submit="handleSubmit"
+    />
   </section>
 </template>
 
-<script setup lang="ts" name="MenusView">
-  import { computed, onMounted, ref } from 'vue';
-  import { menuTypeOptions } from '@vue-scaffold/constants';
+<script setup lang="ts" name="Menu">
+  import { ref } from 'vue';
   import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
   import MenuFormDialog from '@/components/forms/MenuFormDialog.vue';
   import { requests } from '@/api/requests';
@@ -39,63 +43,43 @@
   type MenuTreeItem = {
     id: number | string;
     parentId?: number | string | null;
+    menuType?: string | number;
     name?: string;
+    icon?: string;
     path?: string;
-    menuType?: string;
     permissionCode?: string;
     sortOrder?: number;
-    visible?: boolean;
+    visible?: number | boolean;
+    remark?: string;
     children?: MenuTreeItem[];
   };
 
-  const menus = ref<MenuRecord[]>([]);
+  const rows = ref<MenuRecord[]>([]);
   const selectedRecord = ref<MenuRecord | null>(null);
   const dialogVisible = ref(false);
   const loading = ref(false);
   const actionLoading = ref(false);
 
-  const flatMenus = computed(() => {
-    const walk = (items: MenuRecord[], level = 0): Array<MenuRecord & { displayName: string }> =>
-      items.flatMap(item => [
-        { ...item, displayName: `${'　'.repeat(level)}${item.menuName}` },
-        ...walk(item.children ?? [], level + 1)
-      ]);
-    return walk(menus.value);
-  });
-
-  const menuTypeMap = Object.fromEntries(menuTypeOptions.map((item: { id: number; name: string }) => [item.id, item.name]));
-
   const tableInfo = {
     columns: [
-      { key: 'menuName', prop: 'displayName', label: '菜单名称', minWidth: 220 },
-      { key: 'orderNum', prop: 'orderNum', label: '排序', minWidth: 80 },
+      { key: 'menuName', prop: 'menuName', label: '菜单名称', minWidth: 180 },
+      { key: 'path', prop: 'path', label: '路由路径', minWidth: 220 },
+      { key: 'menuCode', prop: 'menuCode', label: '权限编码', minWidth: 220 },
+      { key: 'orderNum', prop: 'orderNum', label: '排序', width: 100 },
       {
         key: 'menuType',
         prop: 'menuType',
         label: '类型',
-        minWidth: 100,
-        genre: '$tag',
-        tagText: (row: MenuRecord) => menuTypeMap[row.menuType]
-      },
-      { key: 'icon', prop: 'icon', label: '图标', genre: '$slot', minWidth: 80 },
-      { key: 'path', prop: 'path', label: '路径', minWidth: 180 },
-      { key: 'menuCode', prop: 'menuCode', label: '权限编码', minWidth: 180 },
-      {
-        key: 'enabled',
-        prop: 'enabled',
-        label: '启用状态',
-        minWidth: 100,
-        genre: '$tag',
-        tagText: (row: MenuRecord) => (row.enabled ? '启用' : '停用'),
-        tagType: (row: MenuRecord) => (row.enabled ? 'success' : 'danger')
+        width: 100,
+        tagText: (row: MenuRecord) => ({ 1: '目录', 2: '菜单', 3: '页面', 4: '按钮' }[row.menuType] || '菜单')
       },
       {
         key: 'actions',
         label: '操作',
         genre: '$action',
-        width: 260,
+        width: 280,
         actions: [
-          { key: 'append', label: '新增下级', permissions: 'system:menu:update' },
+          { key: 'create', label: '新增下级', permissions: 'system:menu:update' },
           { key: 'edit', label: '编辑', permissions: 'system:menu:update' },
           { key: 'delete', label: '删除', permissions: 'system:menu:delete', type: 'danger' }
         ]
@@ -103,24 +87,22 @@
     ]
   };
 
-  function mapMenuType(value?: string): 1 | 2 | 3 | 4 {
-    if (value === 'M' || value === 'CATALOG') {
-      return 1;
+  function mapMenuType(menuType?: string | number) {
+    switch (String(menuType ?? '').toUpperCase()) {
+      case 'CATALOG':
+      case 'M':
+        return 1 as const;
+      case 'MENU':
+      case 'C':
+        return 2 as const;
+      case 'BUTTON':
+      case 'B':
+        return 4 as const;
+      default:
+        return Number(menuType) === 1 || Number(menuType) === 2 || Number(menuType) === 3 || Number(menuType) === 4
+          ? Number(menuType) as 1 | 2 | 3 | 4
+          : 2 as const;
     }
-    if (value === 'B' || value === 'BUTTON') {
-      return 4;
-    }
-    return 2;
-  }
-
-  function toBackendMenuType(value: number) {
-    if (value === 1) {
-      return 'M';
-    }
-    if (value === 4) {
-      return 'B';
-    }
-    return 'C';
   }
 
   function mapMenu(item: MenuTreeItem): MenuRecord {
@@ -129,12 +111,12 @@
       parentId: item.parentId === null || item.parentId === undefined ? null : String(item.parentId),
       menuType: mapMenuType(item.menuType),
       menuName: item.name ?? '',
-      icon: '',
+      icon: item.icon ?? '',
       path: item.path ?? '',
       menuCode: item.permissionCode ?? '',
       orderNum: Number(item.sortOrder ?? 1),
-      enabled: item.visible !== false,
-      remark: '',
+      enabled: item.visible !== false && Number(item.visible ?? 1) !== 0,
+      remark: item.remark ?? '',
       children: Array.isArray(item.children) ? item.children.map(mapMenu) : []
     };
   }
@@ -143,7 +125,7 @@
     loading.value = true;
     try {
       const result = await requests.menus.tree('/api/menu/list-all-menu-tree', {});
-      menus.value = Array.isArray(result) ? result.map((item: MenuTreeItem) => mapMenu(item)) : [];
+      rows.value = Array.isArray(result) ? result.map((item: MenuTreeItem) => mapMenu(item)) : [];
     } finally {
       loading.value = false;
     }
@@ -172,12 +154,14 @@
     const requestBody = {
       id: id ? Number(id) : undefined,
       parentId: payload.parentId ? Number(payload.parentId) : 0,
+      menuType: payload.menuType,
       name: payload.menuName,
+      icon: payload.icon ?? '',
       path: payload.path,
-      menuType: toBackendMenuType(payload.menuType),
       permissionCode: payload.menuCode,
       sortOrder: payload.orderNum,
-      visible: payload.enabled
+      visible: payload.enabled ? 1 : 0,
+      remark: payload.remark ?? ''
     };
     if (id) {
       await requests.menus.update('/api/menu/update-menu', requestBody);
@@ -193,7 +177,7 @@
     if (actionLoading.value) {
       return;
     }
-    if (action.key === 'append') {
+    if (action.key === 'create') {
       openCreate(row);
       return;
     }
@@ -217,33 +201,21 @@
     }
   }
 
-  onMounted(loadData);
+  loadData();
 </script>
 
 <style scoped lang="scss">
-  .MenusView {
+  .Menu {
     display: grid;
     gap: 20px;
   }
 
-  .toolbar {
+  .toolbar,
+  .content {
     padding: 20px 24px;
-    display: flex;
-    align-items: start;
-    justify-content: space-between;
-    gap: 16px;
-  }
-
-  .toolbar p {
-    margin: 8px 0 0;
-    color: #667085;
   }
 
   .toolbar :deep(.AppListHeader-root) {
     width: 100%;
-  }
-
-  .table-wrap {
-    padding: 16px;
   }
 </style>

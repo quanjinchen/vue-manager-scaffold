@@ -5,13 +5,13 @@
       <p>核心接入规模与近 7 天变化</p>
     </header>
     <div class="card-grid">
-      <article v-for="item in items" :key="item.id" class="stat-card" :class="`stat-card-${item.id}`">
+      <article v-for="item in props.items" :key="item.id" class="stat-card" :class="`stat-card-${item.id}`">
         <div class="stat-copy">
           <p class="label">{{ item.name }}</p>
           <strong>{{ formatStatisticNumber(item.num) }}</strong>
-          <p class="trend" :class="{ up: item.isUp }">
-            <span>较过去7天</span>
-            <em>{{ item.isUp ? '+' : '-' }}{{ formatStatisticNumber(item.upNum) }}</em>
+          <p class="trend">
+            <span>{{ item.subLabel }}</span>
+            <em>{{ formatStatisticNumber(item.subValue) }}</em>
           </p>
         </div>
         <div class="stat-icon">
@@ -23,39 +23,18 @@
 </template>
 
 <script setup lang="ts" name="BaseStatsCard">
-  import { computed } from 'vue';
   import { formatStatisticNumber } from '@vue-scaffold/utils';
 
   const props = defineProps<{
-    detail: Record<string, any>;
+    items: Array<{
+      id: number | string;
+      name: string;
+      num: number;
+      subLabel: string;
+      subValue: number;
+      icon: string;
+    }>;
   }>();
-
-  const items = computed(() => [
-    {
-      id: 1,
-      name: '接入用户数',
-      num: props.detail.userCot ?? 0,
-      isUp: Boolean(props.detail.userUp),
-      upNum: props.detail.upUserNum ?? 0,
-      icon: 'User'
-    },
-    {
-      id: 2,
-      name: '接入应用数',
-      num: props.detail.appCot ?? 0,
-      isUp: Boolean(props.detail.appUp),
-      upNum: props.detail.upAppNum ?? 0,
-      icon: 'Grid'
-    },
-    {
-      id: 3,
-      name: '用户认证数',
-      num: props.detail.userAuthCot ?? 0,
-      isUp: Boolean(props.detail.userAuthUp),
-      upNum: props.detail.upUserAuthNum ?? 0,
-      icon: 'Histogram'
-    }
-  ]);
 </script>
 
 <style scoped lang="scss">
@@ -129,10 +108,6 @@
     font-style: normal;
     font-weight: 600;
     color: #f04438;
-  }
-
-  .trend.up em {
-    color: #12b76a;
   }
 
   .stat-icon {

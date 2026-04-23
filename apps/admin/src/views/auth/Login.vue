@@ -1,6 +1,6 @@
 <template>
-  <section class="LoginView">
-    <div class="LoginView-card surface-card">
+  <section class="Login">
+    <div class="Login-card surface-card">
       <p class="eyebrow">管理后台模板</p>
       <h1>快速开始后台项目</h1>
       <p class="description">
@@ -24,12 +24,13 @@
   </section>
 </template>
 
-<script setup lang="ts" name="LoginView">
+<script setup lang="ts" name="Login">
   import { reactive, ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { useAuthStore, useMenuStore } from '@/stores';
   import { messageAlert } from '@vue-scaffold/utils';
-  import { authRepository } from '@/mock/repository';
+  import { ensureAccessRoutes } from '@/router';
+  import { loginByPassword } from '@/services/auth';
 
   const router = useRouter();
   const route = useRoute();
@@ -49,18 +50,14 @@
     }
     loading.value = true;
     try {
-      const result = await authRepository.login(form.account, form.password);
-      authStore.applyAccess({
-        token: String(result?.token ?? ''),
-        profile: {
-          id: '1',
-          name: form.account,
-          email: `${form.account}@example.com`
-        },
-        permissions: []
+      const accessPayload = await loginByPassword({
+        account: form.account,
+        password: form.password
       });
-      menuStore.setPermissionData([]);
+      authStore.applyAccess(accessPayload);
+      menuStore.setPermissionData(accessPayload.menuList ?? []);
       menuStore.setIsAddRoutes(false);
+      ensureAccessRoutes();
       router.replace(String(route.query.redirect ?? '/'));
     } finally {
       loading.value = false;
@@ -69,7 +66,7 @@
 </script>
 
 <style scoped lang="scss">
-  .LoginView {
+  .Login {
     min-height: 100vh;
     display: grid;
     place-items: center;
@@ -80,7 +77,7 @@
       linear-gradient(135deg, #eef4ff 0%, #f6fbf8 100%);
   }
 
-  .LoginView-card {
+  .Login-card {
     width: min(440px, 100%);
     padding: 36px;
   }

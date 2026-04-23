@@ -1,5 +1,5 @@
 <template>
-  <section class="OperationLogsView">
+  <section class="OperationLog">
     <div class="surface-card table-wrap">
       <AppTableList>
         <AppListHeader>
@@ -37,7 +37,7 @@
   </section>
 </template>
 
-<script setup lang="ts" name="OperationLogsView">
+<script setup lang="ts" name="OperationLog">
   import { onMounted, ref } from 'vue';
   import { requests } from '@/api/requests';
 
@@ -110,7 +110,7 @@
 </script>
 
 <style scoped lang="scss">
-  .OperationLogsView {
+  .OperationLog {
     display: grid;
     gap: 16px;
   }

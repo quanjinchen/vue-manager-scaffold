@@ -2,8 +2,8 @@
   <section class="RankListCard-root surface-card">
     <header class="card-head">
       <div>
-        <h3>接入应用排行榜</h3>
-        <p>按用户数或认证次数查看应用表现</p>
+        <h3>{{ title }}</h3>
+        <p>{{ subtitle }}</p>
       </div>
       <el-radio-group v-model="currentValue" size="small" @change="emit('change', currentValue)">
         <el-radio-button v-for="item in tabs" :key="item.id" :value="item.id">{{ item.name }}</el-radio-button>
@@ -49,6 +49,8 @@
   };
 
   const props = defineProps<{
+    title: string;
+    subtitle: string;
     list: RankItem[];
     tabs: TabItem[];
     modelValue: string;

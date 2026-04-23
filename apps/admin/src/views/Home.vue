@@ -1,5 +1,5 @@
 <template>
-  <section class="HomeView">
+  <section class="Home">
     <section class="stats">
       <article v-for="item in statCards" :key="item.label" class="stat surface-card">
         <p class="label">{{ item.label }}</p>
@@ -10,7 +10,7 @@
   </section>
 </template>
 
-<script setup lang="ts" name="HomeView">
+<script setup lang="ts" name="Home">
   const statCards = [
     { label: 'Workspace', value: 'Monorepo', note: 'apps + packages' },
     { label: 'Routing', value: 'Dynamic', note: 'permission-aware guards' },
@@ -20,7 +20,7 @@
 </script>
 
 <style scoped lang="scss">
-  .HomeView {
+  .Home {
     display: grid;
     gap: 20px;
   }

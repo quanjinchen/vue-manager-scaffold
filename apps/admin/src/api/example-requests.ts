@@ -6,43 +6,20 @@ import { appRequest, type AppRequestMethodOptions } from '@/api/app-request';
 export const exampleRequests = {
   users: {
     list: (url: string, params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) =>
-      appRequest.post(url, params, {
-        ...options,
-        custom: {
-          permissions: 'system:user:query',
-          ...(options.custom ?? {})
-        }
-      }),
+      appRequest.post(url, params, options),
     detail: (url: string, params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) =>
       appRequest.get(url, params, {
-        ...options,
-        custom: {
-          appendPathOnGet: true,
-          permissions: 'system:user:query',
-          ...(options.custom ?? {})
-        }
+        appendPathOnGet: true,
+        ...options
       }),
     create: (url: string, params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) =>
-      appRequest.post(url, params, {
-        ...options,
-        custom: {
-          permissions: 'system:user:add',
-          ...(options.custom ?? {})
-        }
-      })
+      appRequest.post(url, params, options)
   },
   operationLogs: {
     pageSilently: (url: string, params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) =>
       appRequest.post(url, params, {
-        ...options,
-        custom: {
-          permissions: 'system:operationLog:query',
-          customOptions: {
-            alertError: false,
-            ...(options.custom?.customOptions ?? {})
-          },
-          ...(options.custom ?? {})
-        }
+        alertError: false,
+        ...options
       })
   }
 };

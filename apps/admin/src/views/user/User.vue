@@ -1,5 +1,5 @@
 <template>
-  <section class="UsersView">
+  <section class="User">
     <div class="surface-card table-wrap">
       <AppTableList>
         <AppListHeader>
@@ -43,7 +43,7 @@
   </section>
 </template>
 
-<script setup lang="ts" name="UsersView">
+<script setup lang="ts" name="User">
   import { onMounted, ref } from 'vue';
   import { userStatusOptions } from '@vue-scaffold/constants';
   import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
@@ -337,7 +337,7 @@
 </script>
 
 <style scoped lang="scss">
-  .UsersView {
+  .User {
     display: grid;
     gap: 16px;
   }
