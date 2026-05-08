@@ -17,7 +17,12 @@
 
     <section class="content surface-card">
       <AppTable
-        :table-props="{ data: rows }"
+        :table-props="{
+          data: rows,
+          rowKey: 'id',
+          treeProps: { children: 'children' },
+          defaultExpandAll: true
+        }"
         :table-info="tableInfo"
         :loading="loading"
         @handle-click="handleAction"
@@ -165,7 +170,7 @@
     };
     if (id) {
       await requests.menus.update('/api/menu/update-menu', requestBody);
-      messageAlert({ message: '菜单更新成功' });
+      // messageAlert({ message: '菜单更新成功' });
     } else {
       await requests.menus.save('/api/menu/create-menu', requestBody);
       messageAlert({ message: '菜单创建成功' });

@@ -91,7 +91,7 @@ function handleUnauthorized() {
 
 function createRequestClient() {
   const client = new RequestClient({
-    baseURL: requestBaseUrl || window.location.origin,
+    baseURL: window.location.origin,
     responseReturn: 'body',
     timeout: 30000
   });
@@ -133,18 +133,15 @@ function unwrapResponseBody(response: any) {
 
 function resolveRequestResult(
   response: any,
-  options: {
-    alertSuccess?: boolean;
-    skipBusinessError?: boolean;
-  } = {}
+  options: AppRequestCustomOptions= {}
 ) {
   const {
     alertSuccess = false,
     skipBusinessError = false
   } = options;
-  const responseData = unwrapResponseBody(response);
-  const businessCode = resolveBusinessCode(response);
-  const businessMessage = resolveBusinessMessage(responseData);
+  const responseData = response.data
+  const businessCode = resolveBusinessCode(response.data);
+  const businessMessage = resolveBusinessMessage(response.data);
 
   if (!skipBusinessError && businessCode != undefined && businessCode !== 0) {
     throw { response };
@@ -164,6 +161,7 @@ function resolveRequestResult(
 }
 
 function handleRequestError(error: any, alertError = true) {
+  console.log({error})
   const response = error?.response;
   const responseBody = unwrapResponseBody(response);
   const businessCode = resolveBusinessCode(responseBody);
@@ -270,10 +268,9 @@ async function runAppRequest(
       responseReturn: 'body'
     });
 
-    return resolveRequestResult(response, {
-      alertSuccess,
-      skipBusinessError
-    });
+    console.log({response})
+
+    return resolveRequestResult(response, customOptions);
   } catch (error: any) {
     handleRequestError(error, alertError);
     throw error;
@@ -311,10 +308,7 @@ async function runUploadRequest(
       responseReturn: 'body'
     });
 
-    return resolveRequestResult(response, {
-      alertSuccess,
-      skipBusinessError
-    });
+    return resolveRequestResult(response, customOptions);
   } catch (error: any) {
     handleRequestError(error, alertError);
     throw error;
