@@ -338,7 +338,8 @@
 
 <style scoped lang="scss">
   .User {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
   }
 

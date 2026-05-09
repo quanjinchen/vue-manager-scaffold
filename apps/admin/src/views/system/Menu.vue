@@ -48,9 +48,8 @@
   type MenuTreeItem = {
     id: number | string;
     parentId?: number | string | null;
-    menuType?: string | number;
+    menuType?: string;
     name?: string;
-    icon?: string;
     path?: string;
     permissionCode?: string;
     sortOrder?: number;
@@ -76,7 +75,7 @@
         prop: 'menuType',
         label: '类型',
         width: 100,
-        tagText: (row: MenuRecord) => ({ 1: '目录', 2: '菜单', 3: '页面', 4: '按钮' }[row.menuType] || '菜单')
+        tagText: (row: MenuRecord) => ({ M: '目录', C: '菜单', B: '按钮' }[row.menuType] || '菜单')
       },
       {
         key: 'actions',
@@ -92,21 +91,22 @@
     ]
   };
 
-  function mapMenuType(menuType?: string | number) {
-    switch (String(menuType ?? '').toUpperCase()) {
-      case 'CATALOG':
-      case 'M':
-        return 1 as const;
-      case 'MENU':
-      case 'C':
-        return 2 as const;
-      case 'BUTTON':
-      case 'B':
-        return 4 as const;
+  function mapMenuType(menuType?: string | number): 'M' | 'C' | 'B' {
+    const typeStr = String(menuType ?? '').toUpperCase();
+    if (typeStr === 'M' || typeStr === 'C' || typeStr === 'B') {
+      return typeStr as 'M' | 'C' | 'B';
+    }
+    // 兼容旧的数字格式
+    switch (Number(menuType)) {
+      case 1:
+        return 'M';
+      case 2:
+      case 3:
+        return 'C';
+      case 4:
+        return 'B';
       default:
-        return Number(menuType) === 1 || Number(menuType) === 2 || Number(menuType) === 3 || Number(menuType) === 4
-          ? Number(menuType) as 1 | 2 | 3 | 4
-          : 2 as const;
+        return 'C';
     }
   }
 
@@ -116,12 +116,10 @@
       parentId: item.parentId === null || item.parentId === undefined ? null : String(item.parentId),
       menuType: mapMenuType(item.menuType),
       menuName: item.name ?? '',
-      icon: item.icon ?? '',
       path: item.path ?? '',
       menuCode: item.permissionCode ?? '',
       orderNum: Number(item.sortOrder ?? 1),
       enabled: item.visible !== false && Number(item.visible ?? 1) !== 0,
-      remark: item.remark ?? '',
       children: Array.isArray(item.children) ? item.children.map(mapMenu) : []
     };
   }
@@ -141,14 +139,12 @@
       ? {
           id: '',
           parentId: parent.id,
-          menuType: 2,
+          menuType: 'C',
           menuName: '',
-          icon: '',
           path: '',
           menuCode: '',
           orderNum: 1,
           enabled: true,
-          remark: '',
           children: []
         }
       : null;
@@ -161,16 +157,13 @@
       parentId: payload.parentId ? Number(payload.parentId) : 0,
       menuType: payload.menuType,
       name: payload.menuName,
-      icon: payload.icon ?? '',
       path: payload.path,
       permissionCode: payload.menuCode,
       sortOrder: payload.orderNum,
-      visible: payload.enabled ? 1 : 0,
-      remark: payload.remark ?? ''
+      visible: payload.enabled
     };
     if (id) {
       await requests.menus.update('/api/menu/update-menu', requestBody);
-      // messageAlert({ message: '菜单更新成功' });
     } else {
       await requests.menus.save('/api/menu/create-menu', requestBody);
       messageAlert({ message: '菜单创建成功' });
@@ -211,7 +204,8 @@
 
 <style scoped lang="scss">
   .Menu {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 20px;
   }
 

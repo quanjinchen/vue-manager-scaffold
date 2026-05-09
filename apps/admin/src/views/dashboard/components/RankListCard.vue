@@ -100,23 +100,25 @@
 
   .empty-state {
     min-height: 220px;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .rank-list {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
   }
 
   .rank-item {
-    display: grid;
-    grid-template-columns: 180px minmax(0, 1fr);
+    display: flex;
     gap: 16px;
     align-items: center;
   }
 
   .rank-meta {
+    flex: 0 0 180px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -125,8 +127,9 @@
   .index {
     width: 32px;
     height: 32px;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-radius: 10px;
     background: #edf2ff;
     color: #0041c0;
@@ -145,13 +148,14 @@
   }
 
   .rank-main {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    flex: 1;
+    display: flex;
     gap: 12px;
     align-items: center;
   }
 
   .track {
+    flex: 1;
     height: 12px;
     border-radius: 999px;
     background: #eef2f7;

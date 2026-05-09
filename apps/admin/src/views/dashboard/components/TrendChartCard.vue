@@ -107,31 +107,39 @@
 
   .empty-state {
     min-height: 220px;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .chart-shell {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
   }
 
   .axis {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+    display: flex;
     gap: 12px;
     color: #98a2b3;
     font-size: 12px;
     text-align: center;
   }
 
+  .axis > * {
+    flex: 1 1 44px;
+    min-width: 44px;
+  }
+
   .series-list {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 18px;
   }
 
   .series-row {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
   }
 
@@ -152,13 +160,14 @@
 
   .bars {
     height: 160px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+    display: flex;
     gap: 12px;
-    align-items: end;
+    align-items: flex-end;
   }
 
   .bar-wrap {
+    flex: 1 1 44px;
+    min-width: 44px;
     height: 100%;
     display: flex;
     flex-direction: column;

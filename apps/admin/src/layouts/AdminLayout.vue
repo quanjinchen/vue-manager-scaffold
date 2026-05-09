@@ -28,7 +28,7 @@
             :collapsed="appStore.sidebarCollapsed"
             class="AdminLayout-menu"
         /></el-aside>
-        <el-main
+        <el-main class="AdminLayout-main-wrapper"
           ><main class="AdminLayout-main">
             <section class="AdminLayout-content">
               <AppBreadcrumb />
@@ -63,9 +63,8 @@ async function logout() {
 <style scoped lang="scss">
 .AdminLayout-root {
   width: 100vw;
-  
   height: 100vh;
-  overflow: auto;
+  overflow: hidden;
   background: #eef3f9;
 
   .layout-wrapper {
@@ -91,6 +90,8 @@ async function logout() {
 
   .layout-container {
     display: flex;
+    height: calc(100% - 64px);
+    overflow: hidden;
   }
 }
 
@@ -98,7 +99,9 @@ async function logout() {
   background: #101828;
   color: #fff;
   transition: width 0.2s ease;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
 }
 
 .AdminLayout-logo {
@@ -114,8 +117,19 @@ async function logout() {
   background: transparent;
 }
 
+.AdminLayout-main-wrapper {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+}
+
 .AdminLayout-main {
   min-width: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .AdminLayout-header {
@@ -131,7 +145,8 @@ async function logout() {
 
 .AdminLayout-content {
   padding: 24px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 

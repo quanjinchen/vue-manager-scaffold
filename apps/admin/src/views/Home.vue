@@ -21,7 +21,8 @@
 
 <style scoped lang="scss">
   .Home {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 20px;
   }
 
@@ -50,9 +51,14 @@
   }
 
   .stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 16px;
+  }
+
+  .stat {
+    flex: 1 1 180px;
+    min-width: 180px;
   }
 
   .label {

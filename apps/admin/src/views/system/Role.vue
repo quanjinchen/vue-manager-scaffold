@@ -234,7 +234,8 @@
 
 <style scoped lang="scss">
   .Role {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
   }
 

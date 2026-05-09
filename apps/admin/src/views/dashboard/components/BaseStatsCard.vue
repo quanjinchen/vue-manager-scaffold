@@ -58,12 +58,14 @@
   }
 
   .card-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 16px;
   }
 
   .stat-card {
+    flex: 1 1 calc(33.333% - 11px);
+    min-width: 200px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -114,8 +116,9 @@
     width: 56px;
     height: 56px;
     border-radius: 16px;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: rgba(255, 255, 255, 0.78);
     color: #0041c0;
   }

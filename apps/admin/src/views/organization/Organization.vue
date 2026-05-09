@@ -248,7 +248,8 @@
 
 <style scoped lang="scss">
   .Organization {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 20px;
   }
 
@@ -270,13 +271,18 @@
   }
 
   .content {
-    display: grid;
-    grid-template-columns: 320px 1fr;
+    display: flex;
     gap: 20px;
   }
 
-  .tree-panel,
+  .tree-panel {
+    flex: 0 0 320px;
+    padding: 20px;
+  }
+
   .table-panel {
+    flex: 1;
+    min-width: 0;
     padding: 20px;
   }
 

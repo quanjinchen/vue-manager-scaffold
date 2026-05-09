@@ -31,11 +31,6 @@
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="图标" prop="icon">
-            <AppInput v-model="form.icon" placeholder="请输入 Element Plus 图标名称" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
           <el-form-item label="菜单名称" prop="menuName">
             <AppInput v-model="form.menuName" v-trim placeholder="请输入菜单名称" />
           </el-form-item>
@@ -58,11 +53,6 @@
         <el-col :span="12">
           <el-form-item label="是否启用" prop="enabled">
             <AppSwitch v-model="form.enabled" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="24">
-          <el-form-item label="备注" prop="remark">
-            <AppInput v-model="form.remark" placeholder="请输入备注" :input-props="{ type: 'textarea', rows: 3 }" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -100,14 +90,12 @@ import type { MenuRecord } from '@/types/domain';
 
   const form = reactive<Omit<MenuRecord, 'id' | 'children'>>({
     parentId: null,
-    menuType: 2,
+    menuType: 'C',
     menuName: '',
-    icon: '',
     path: '',
     menuCode: '',
     orderNum: 1,
-    enabled: true,
-    remark: ''
+    enabled: true
   });
 
   const rules = {
@@ -121,14 +109,12 @@ import type { MenuRecord } from '@/types/domain';
     () => props.record,
     value => {
       form.parentId = value?.parentId ?? null;
-      form.menuType = value?.menuType ?? 2;
+      form.menuType = value?.menuType ?? 'C';
       form.menuName = value?.menuName ?? '';
-      form.icon = value?.icon ?? '';
       form.path = value?.path ?? '';
       form.menuCode = value?.menuCode ?? '';
       form.orderNum = value?.orderNum ?? 1;
       form.enabled = value?.enabled ?? true;
-      form.remark = value?.remark ?? '';
     },
     { immediate: true }
   );

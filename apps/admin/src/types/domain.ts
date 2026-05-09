@@ -25,14 +25,12 @@ export type OrganizationRecord = {
 export type MenuRecord = {
   id: string;
   parentId: string | null;
-  menuType: 1 | 2 | 3 | 4;
+  menuType: 'M' | 'C' | 'B';
   menuName: string;
-  icon?: string;
   path: string;
   menuCode: string;
   orderNum: number;
   enabled: boolean;
-  remark?: string;
   children?: MenuRecord[];
 };
 

@@ -4,9 +4,8 @@ export const userStatusOptions = {
 };
 
 export const menuTypeOptions = [
-  { id: 1, name: '目录' },
-  { id: 2, name: '菜单' },
-  { id: 3, name: '页面' },
-  { id: 4, name: '按钮' }
+  { id: 'M', name: '目录' },
+  { id: 'C', name: '菜单' },
+  { id: 'B', name: '按钮' }
 ];
 

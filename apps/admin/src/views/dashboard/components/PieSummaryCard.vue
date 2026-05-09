@@ -108,26 +108,28 @@
 
   .empty-state {
     min-height: 220px;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .summary-main {
-    display: grid;
-    grid-template-columns: 180px minmax(0, 1fr);
+    display: flex;
     gap: 24px;
     align-items: center;
   }
 
   .donut-shell {
+    flex: 0 0 180px;
     width: 180px;
     height: 180px;
     border-radius: 50%;
     background:
       radial-gradient(circle at center, #fff 0 46%, transparent 47%),
       conic-gradient(#2d6df6 0 30%, #22c55e 30% 56%, #f59e0b 56% 76%, #8b5cf6 76% 100%);
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .donut-center {
@@ -148,7 +150,9 @@
   }
 
   .legend-list {
-    display: grid;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
   }
 

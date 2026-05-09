@@ -159,7 +159,8 @@
 
 <style scoped lang="scss">
   .Dashboard {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 20px;
   }
 
@@ -216,9 +217,14 @@
   }
 
   .dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 20px;
+  }
+
+  .dashboard-grid > * {
+    flex: 1 1 calc(50% - 10px);
+    min-width: 400px;
   }
 
   @media (max-width: 1080px) {
@@ -232,8 +238,9 @@
       width: 100%;
     }
 
-    .dashboard-grid {
-      grid-template-columns: 1fr;
+    .dashboard-grid > * {
+      flex: 1 1 100%;
+      min-width: 0;
     }
   }
 </style>

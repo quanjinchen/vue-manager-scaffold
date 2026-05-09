@@ -111,7 +111,8 @@
 
 <style scoped lang="scss">
   .OperationLog {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
   }
 

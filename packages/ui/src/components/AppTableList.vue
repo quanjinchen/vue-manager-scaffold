@@ -8,7 +8,8 @@
 
 <style scoped lang="scss">
   .AppTableList-root {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
   }
 </style>
