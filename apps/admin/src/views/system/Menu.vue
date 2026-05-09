@@ -41,7 +41,7 @@
 <script setup lang="ts" name="Menu">
   import { ref } from 'vue';
   import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
-  import MenuFormDialog from '@/components/forms/MenuFormDialog.vue';
+  import MenuFormDialog from '@/views/system/components/MenuFormDialog.vue';
   import { requests } from '@/api/requests';
   import type { MenuRecord } from '@/types/domain';
 

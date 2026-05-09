@@ -148,6 +148,8 @@ async function logout() {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  height: 100%;
+  overflow: hidden;
 }
 
 .right {

@@ -41,8 +41,8 @@
 <script setup lang="ts" name="Role">
   import { onMounted, ref } from 'vue';
   import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
-  import RoleFormDialog from '@/components/forms/RoleFormDialog.vue';
-  import GrantRoleMenusDialog, { type GrantMenuTreeNode } from '@/components/forms/GrantRoleMenusDialog.vue';
+  import RoleFormDialog from '@/views/system/components/RoleFormDialog.vue';
+  import GrantRoleMenusDialog, { type GrantMenuTreeNode } from '@/views/system/components/GrantRoleMenusDialog.vue';
   import { requests } from '@/api/requests';
   import type { RoleRecord } from '@/types/domain';
 

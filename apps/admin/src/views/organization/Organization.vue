@@ -51,8 +51,8 @@
 <script setup lang="ts" name="Organization">
   import { computed, onMounted, ref } from 'vue';
   import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
-  import OrganizationFormDialog from '@/components/forms/OrganizationFormDialog.vue';
-  import GrantOrgUsersDialog, { type GrantUserOption } from '@/components/forms/GrantOrgUsersDialog.vue';
+  import OrganizationFormDialog from '@/views/organization/components/OrganizationFormDialog.vue';
+  import GrantOrgUsersDialog, { type GrantUserOption } from '@/views/organization/components/GrantOrgUsersDialog.vue';
   import { requests } from '@/api/requests';
   import type { OrganizationRecord } from '@/types/domain';
 

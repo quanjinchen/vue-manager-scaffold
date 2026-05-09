@@ -2,130 +2,131 @@ import { appRequest, type AppRequestMethodOptions } from '@/api/app-request';
 
 export const requests = {
   login: {
-    accountLogin(url: string, params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post(url, params, options);
+    accountLogin(params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) {
+      return appRequest.post('/api/auth/login', params, options);
     },
-    logout(url: string, params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post(url, params, options);
+    logout(params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) {
+      return appRequest.post('/api/auth/logout', params, options);
     },
-    getLoginInfo(url: string, params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post(url, params, options);
+    getLoginInfo(params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) {
+      return appRequest.post('/api/auth/login-info', params, options);
     },
-    getCaptcha(url: string, params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post(url, params, options);
+    getCaptcha(params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) {
+      return appRequest.post('/api/auth/captcha', params, options);
     }
   },
   dashboard: {
-    summary(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    summary(params: Record<string, any> = {}) {
+      return appRequest.post('/api/dashboard/summary', params);
     }
   },
   operationLogs: {
-    page(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    page(params: Record<string, any> = {}) {
+      return appRequest.post('/api/operation-log/list-operation-log', params);
     }
   },
   users: {
-    list(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    list(params: Record<string, any> = {}) {
+      return appRequest.post('/api/user/list-user', params);
     },
-    detail(url: string, params: Record<string, any> = {}) {
-      return appRequest.get(url, params, {
+    detail(params: Record<string, any> = {}) {
+      return appRequest.get('/api/user/detail', params, {
         appendPathOnGet: true
       });
     },
-    save(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    save(params: Record<string, any> = {}) {
+      return appRequest.post('/api/user/create-user', params);
     },
-    update(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    update(params: Record<string, any> = {}) {
+      return appRequest.post('/api/user/update-user', params);
     },
-    delete(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    delete(params: Record<string, any> = {}) {
+      return appRequest.post('/api/user/delete-user', params);
     },
-    resetPassword(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    resetPassword(params: Record<string, any> = {}) {
+      return appRequest.post('/api/user/reset-user-password', params);
     }
   },
   organizations: {
-    tree(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    tree(params: Record<string, any> = {}) {
+      return appRequest.post('/api/org/list-all-org-tree', params);
     },
-    detail(url: string, params: Record<string, any> = {}) {
-      return appRequest.get(url, params, {
+    detail(params: Record<string, any> = {}) {
+      return appRequest.get('/api/org/detail', params, {
         appendPathOnGet: true
       });
     },
-    save(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    save(params: Record<string, any> = {}) {
+      return appRequest.post('/api/org/create-org', params);
     },
-    update(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    update(params: Record<string, any> = {}) {
+      return appRequest.post('/api/org/update-org', params);
     },
-    delete(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    delete(params: Record<string, any> = {}) {
+      return appRequest.post('/api/org/delete-org', params);
     }
   },
   menus: {
-    tree(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    tree(params: Record<string, any> = {}) {
+      return appRequest.post('/api/menu/list-all-menu-tree', params);
     },
-    save(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    save(params: Record<string, any> = {}) {
+      return appRequest.post('/api/menu/create-menu', params);
     },
-    update(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    update(params: Record<string, any> = {}) {
+      return appRequest.post('/api/menu/update-menu', params);
     },
-    delete(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    delete(params: Record<string, any> = {}) {
+      return appRequest.post('/api/menu/delete-menu', params);
     },
-    detail(url: string, params: Record<string, any> = {}) {
-      return appRequest.get(url, params, {
+    detail(params: Record<string, any> = {}) {
+      return appRequest.get('/api/menu/detail', params, {
         appendPathOnGet: true
       });
     }
   },
   roles: {
-    list(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    list(params: Record<string, any> = {}) {
+      return appRequest.post('/api/role/list-role', params);
     },
-    detail(url: string, params: Record<string, any> = {}) {
-      return appRequest.get(url, params, {
+    detail(params: Record<string, any> = {}) {
+      return appRequest.get('/api/role/detail', params, {
         appendPathOnGet: true
       });
     },
-    save(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    save(params: Record<string, any> = {}) {
+      return appRequest.post('/api/role/create-role', params);
     },
-    update(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    update(params: Record<string, any> = {}) {
+      return appRequest.post('/api/role/update-role', params);
     },
-    delete(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    delete(params: Record<string, any> = {}) {
+      return appRequest.post('/api/role/delete-role', params);
     },
-    grantInfo(url: string, params: Record<string, any> = {}) {
-      return appRequest.get(url, params, {
+    grantInfo(params: Record<string, any> = {}) {
+      return appRequest.get('/api/role/get-role-grant-info-by-role-id', params, {
         appendPathOnGet: true
       });
     },
-    grantMenus(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    grantMenus(params: Record<string, any> = {}) {
+      return appRequest.post('/api/role/grant-role-menus', params);
     }
   },
   userRoles: {
-    list(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    list(params: Record<string, any> = {}) {
+      return appRequest.post('/api/user-role/list-user-role', params);
     },
-    grant(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    grant(params: Record<string, any> = {}) {
+      return appRequest.post('/api/user-role/grant-user-roles', params);
     }
   },
   orgUsers: {
-    list(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    list(params: Record<string, any> = {}) {
+      return appRequest.post('/api/org-user/list-org-user', params);
     },
-    grant(url: string, params: Record<string, any> = {}) {
-      return appRequest.post(url, params);
+    grant(params: Record<string, any> = {}) {
+      return appRequest.post('/api/org-user/grant-org-users', params);
     }
   }
 };
+

@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
 import ElementPlus from 'element-plus';
+import zhCn from 'element-plus/es/locale/lang/zh-cn';
 import App from '@/App.vue';
 import router from '@/router';
 import ui from '@vue-scaffold/ui';
@@ -14,7 +15,7 @@ const pinia = createWorkspacePinia();
 app.use(pinia);
 
 app.use(router);
-app.use(ElementPlus);
+app.use(ElementPlus, { locale: zhCn });
 app.use(createDirectivesPlugin());
 app.use(ui);
 

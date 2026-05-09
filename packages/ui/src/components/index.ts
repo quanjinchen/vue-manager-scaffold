@@ -9,6 +9,7 @@ export { default as AppInputNumber } from './AppInputNumber.vue';
 export { default as AppListHeader } from './AppListHeader.vue';
 export { default as AppMenu } from './AppMenu.vue';
 export { default as AppMenuItems } from './AppMenuItems.vue';
+export { default as AppPager } from './AppPager.vue';
 export { default as AppSelect } from './AppSelect.vue';
 export { default as AppSelectV2 } from './AppSelectV2.vue';
 export { default as AppSwitch } from './AppSwitch.vue';

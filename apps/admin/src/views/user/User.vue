@@ -1,349 +1,260 @@
+<!-- 用户管理 -->
 <template>
-  <section class="User">
+  <main class="User-root AppTableList-wrap">
     <div class="surface-card table-wrap">
       <AppTableList>
         <AppListHeader>
           <div class="header-search">
             <AppInput
-              v-model="keyword"
+              v-model="dataInfo.keyword"
               placeholder="按用户名、姓名、手机号或邮箱搜索"
               :icon-props="{ place: 'suffix', name: 'Search' }"
-              @update:model-value="loadUsers"
+              @input="dataInfo.debounceSearch()"
             />
           </div>
           <div class="header-handle">
-            <AppButton :button-props="{ loading }" @click="refreshPageData()">刷新</AppButton>
-          <AppButton :button-props="{ type: 'primary' }" v-permission="'system:user:add'" @click="openCreate()">新增用户</AppButton>
+            <AppButton
+              :button-props="{ loading }"
+              @click="dataInfo.refreshPageData()"
+              >刷新</AppButton
+            >
+            <AppButton
+              :button-props="{ type: 'primary' }"
+              v-permission="'system:user:add'"
+              @click="dataInfo.openCreate()"
+              >新增用户</AppButton
+            >
           </div>
         </AppListHeader>
 
         <AppTable
-          :table-props="{ data: rows }"
-          :table-info="tableInfo"
-          :page-info="{ pageNum: 1, pageSize: 10 }"
+          :table-props="{ data: list }"
+          :table-info="dataInfo.tableInfo"
+          :page-info="pageInfo"
           :loading="loading"
-          @handle-click="handleAction"
+          @handle-click="dataInfo.handleAction"
+        />
+
+        <AppPager
+          v-model:page-index="pageInfo.pageNum"
+          v-model:page-size="pageInfo.pageSize"
+          :total="total"
+          @change="dataInfo.getList()"
         />
       </AppTableList>
     </div>
 
     <UserFormDialog
-      v-model="dialogVisible"
-      :record="selectedRecord"
-      :organizations="organizations"
-      @submit="handleSubmit"
+      v-model="dataInfo.dialogVisible"
+      :record="dataInfo.selectedRecord"
+      :organizations="dataInfo.organizations"
+      @success="dataInfo.getList()"
     />
     <GrantUserRolesDialog
-      v-model="grantDialogVisible"
-      :user="selectedGrantUser"
-      :roles="roleOptions"
-      :checked-role-ids="checkedRoleIds"
-      @submit="handleGrantRoles"
+      v-model="dataInfo.grantDialogVisible"
+      :user="dataInfo.selectedGrantUser"
+      @success="dataInfo.getList()"
     />
-  </section>
+  </main>
 </template>
 
 <script setup lang="ts" name="User">
-  import { onMounted, ref } from 'vue';
-  import { userStatusOptions } from '@vue-scaffold/constants';
-  import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
-  import UserFormDialog from '@/components/forms/UserFormDialog.vue';
-  import GrantUserRolesDialog, { type GrantRoleOption } from '@/components/forms/GrantUserRolesDialog.vue';
-  import { requests } from '@/api/requests';
-  import type { OrganizationRecord, UserRecord } from '@/types/domain';
+import { reactive, toRefs } from "vue";
+import { messageAlert, messageConfirm, debounce } from "@vue-scaffold/utils";
+import UserFormDialog from "@/views/user/components/UserFormDialog.vue";
+import GrantUserRolesDialog from "@/views/user/components/GrantUserRolesDialog.vue";
+import { requests } from "@/api/requests";
+import type { OrganizationRecord, UserRecord } from "@/types/domain";
+import tableInfo from "@/views/user/tables/User";
 
-  type UserPageItem = {
-    id: number | string;
-    username?: string;
-    nickname?: string;
-    phone?: string;
-    email?: string;
-    orgId?: number | string | null;
-    status?: number | null;
-  };
+type UserPageItem = {
+  id: number | string;
+  username?: string;
+  nickname?: string;
+  phone?: string;
+  email?: string;
+  orgId?: number | string | null;
+  status?: number | null;
+};
 
-  type OrgTreeItem = {
-    id: number | string;
-    parentId?: number | string | null;
-    name?: string;
-    orgCode?: string;
-    sortOrder?: number;
-    children?: OrgTreeItem[];
-  };
+type OrgTreeItem = {
+  id: number | string;
+  parentId?: number | string | null;
+  name?: string;
+  orgCode?: string;
+  sortOrder?: number;
+  children?: OrgTreeItem[];
+};
 
-  type RolePageItem = {
-    id: number | string;
-    code?: string;
-    name?: string;
-  };
-
-  type UserRoleInfo = {
-    roleId?: number;
-  };
-
-  const dialogVisible = ref(false);
-  const grantDialogVisible = ref(false);
-  const keyword = ref('');
-  const selectedRecord = ref<UserRecord | null>(null);
-  const selectedGrantUser = ref<UserRecord | null>(null);
-  const organizations = ref<OrganizationRecord[]>([]);
-  const roleOptions = ref<GrantRoleOption[]>([]);
-  const checkedRoleIds = ref<number[]>([]);
-  const rows = ref<UserRecord[]>([]);
-  const loading = ref(false);
-  const actionLoading = ref(false);
-
-  const tableInfo = {
-    columns: [
-      { key: 'ordinal', label: '#', genre: '$ordinal', width: 64 },
-      { key: 'userName', prop: 'userName', label: '用户名', minWidth: 160 },
-      { key: 'name', prop: 'fullName', label: '昵称', minWidth: 180 },
-      { key: 'phoneNum', prop: 'phoneNum', label: '手机号', minWidth: 160 },
-      { key: 'email', prop: 'email', label: '邮箱', minWidth: 220 },
-      {
-        key: 'orgNames',
-        prop: 'orgNames',
-        label: '所属组织',
-        minWidth: 220,
-        tagText: (row: UserRecord) => row.orgNames.join(', ') || '-'
-      },
-      {
-        key: 'status',
-        prop: 'status',
-        label: '状态',
-        genre: '$tag',
-        width: 120,
-        tagMap: userStatusOptions
-      },
-      { key: 'updatedAt', prop: 'updatedAt', label: '更新时间', genre: '$date', minWidth: 180 },
-      {
-        key: 'actions',
-        label: '操作',
-        genre: '$action',
-        width: 380,
-        actions: [
-          { key: 'grantRoles', label: '分配角色', permissions: 'system:user:update' },
-          { key: 'edit', label: '编辑', permissions: 'system:user:update' },
-          { key: 'resetPassword', label: '重置密码', permissions: 'system:user:resetPassword', type: 'warning' },
-          { key: 'delete', label: '删除', permissions: 'system:user:delete', type: 'danger' }
-        ]
-      }
-    ]
-  };
-
-  function buildOrgNameMap(items: OrganizationRecord[]) {
-    const nameMap = new Map<string, string>();
-    const walk = (nodes: OrganizationRecord[]) => {
-      nodes.forEach(item => {
-        nameMap.set(item.id, item.orgName);
-        walk(item.children ?? []);
-      });
-    };
-    walk(items);
-    return nameMap;
-  }
-
-  function mapOrganization(item: OrgTreeItem): OrganizationRecord {
+// 数据信息
+const dataInfo: any = reactive({
+  // 表格配置
+  tableInfo,
+  pageInfo: { pageNum: 1, pageSize: 10 },
+  keyword: "",
+  dialogVisible: false,
+  grantDialogVisible: false,
+  selectedRecord: null as UserRecord | null,
+  selectedGrantUser: null as UserRecord | null,
+  organizations: [] as OrganizationRecord[],
+  total: 0,
+  list: [] as UserRecord[],
+  loading: false,
+  actionLoading: false,
+  // 请求参数
+  get params() {
     return {
-      id: String(item.id),
-      parentId: item.parentId === null || item.parentId === undefined ? null : String(item.parentId),
-      orgName: item.name ?? '',
-      shortName: item.orgCode ?? '',
-      orderNum: Number(item.sortOrder ?? 1),
-      remark: '',
-      children: Array.isArray(item.children) ? item.children.map(mapOrganization) : []
+      keyword: this.keyword,
+      ...this.pageInfo,
     };
-  }
-
-  function mapUser(item: UserPageItem, orgNameMap: Map<string, string>): UserRecord {
-    const orgId = item.orgId === null || item.orgId === undefined ? '' : String(item.orgId);
-    const orgName = orgId ? orgNameMap.get(orgId) ?? '' : '';
-    return {
-      id: String(item.id),
-      userName: item.username ?? '',
-      fullName: item.nickname ?? '',
-      phoneNum: item.phone ?? '',
-      email: item.email ?? '',
-      orgIds: orgId ? [orgId] : [],
-      orgNames: orgName ? [orgName] : [],
-      status: Number(item.status ?? 1) === 1 ? 'active' : 'disabled',
-      createdAt: '',
-      updatedAt: '',
-      remark: ''
-    };
-  }
-
-  function mapRoleOption(item: RolePageItem): GrantRoleOption {
-    return {
-      id: String(item.id),
-      name: item.name || item.code || ''
-    };
-  }
-
-  async function loadUsers() {
-    loading.value = true;
+  },
+  // 获取用户列表
+  async getList() {
+    this.loading = true;
     try {
-      const orgNameMap = buildOrgNameMap(organizations.value);
-      const result = await requests.users.list('/api/user/list-user', {
-        pageNum: 1,
-        pageSize: 100,
-        keyword: keyword.value
-      });
-      rows.value = Array.isArray(result?.records)
-        ? result.records.map((item: UserPageItem) => mapUser(item, orgNameMap))
-        : [];
+      const data = await requests.users.list(this.params);
+      this.total = data?.total;
+      this.list = data.records;
     } finally {
-      loading.value = false;
+      this.loading = false;
     }
-  }
+  },
 
-  async function loadOrganizations() {
-      loading.value = true;
-      try {
-        const result = await requests.organizations.tree('/api/org/list-all-org-tree', {});
-        organizations.value = Array.isArray(result) ? result.map((item: OrgTreeItem) => mapOrganization(item)) : [];
-      } finally {
-        loading.value = false;
-      }
-  }
+  // 获取组织列表
+  async getOrganizations() {
+    const data = await requests.organizations.tree();
+    this.organizations = data;
+  },
 
-  async function refreshPageData() {
-    loading.value = true;
+  // 刷新页面数据
+  async refreshPageData() {
+    this.loading = true;
     try {
-      const orgResult = await requests.organizations.tree('/api/org/list-all-org-tree', {});
-      organizations.value = Array.isArray(orgResult) ? orgResult.map((item: OrgTreeItem) => mapOrganization(item)) : [];
-      const orgNameMap = buildOrgNameMap(organizations.value);
-      const userResult = await requests.users.list('/api/user/list-user', {
-        pageNum: 1,
-        pageSize: 100,
-        keyword: keyword.value
-      });
-      rows.value = Array.isArray(userResult?.records)
-        ? userResult.records.map((item: UserPageItem) => mapUser(item, orgNameMap))
-        : [];
+      await this.getOrganizations();
+      await this.getList();
     } finally {
-      loading.value = false;
+      this.loading = false;
     }
-  }
+  },
 
-  function openCreate() {
-    selectedRecord.value = null;
-    dialogVisible.value = true;
-  }
+  // 搜索
+  search() {
+    this.pageInfo.pageNum = 1;
+    this.getList();
+  },
 
-  async function handleSubmit(payload: Omit<UserRecord, 'id' | 'createdAt' | 'updatedAt'>, id?: string) {
-    const requestBody = {
-      id: id ? Number(id) : undefined,
-      username: payload.userName,
-      nickname: payload.fullName,
-      phone: payload.phoneNum,
-      email: payload.email,
-      orgId: payload.orgIds[0] ? Number(payload.orgIds[0]) : undefined,
-      status: payload.status === 'active' ? 1 : 0
+  // 带防抖搜索
+  debounceSearch: debounce(function (this: any) {
+    this.search();
+  }, 300),
+
+  // 打开新增对话框
+  openCreate() {
+    this.selectedRecord = null;
+    this.dialogVisible = true;
+  },
+
+  // 打开分配角色对话框
+  openGrantRoles(row: UserRecord) {
+    this.selectedGrantUser = row;
+    this.grantDialogVisible = true;
+  },
+
+  // 打开编辑对话框
+  openEdit(row: UserRecord) {
+    this.selectedRecord = row;
+    this.dialogVisible = true;
+  },
+
+  // 重置密码
+  async resetPassword(row: UserRecord) {
+    this.actionLoading = true;
+    try {
+      await messageConfirm(
+        `确认重置用户"${row.fullName || row.userName}"的密码吗？`,
+      );
+      await requests.users.resetPassword({
+        userId: Number(row.id),
+      });
+      messageAlert({ message: "密码重置成功" });
+      await this.getList();
+    } finally {
+      this.actionLoading = false;
+    }
+  },
+
+  // 删除用户
+  async deleteUser(row: UserRecord) {
+    this.actionLoading = true;
+    try {
+      await messageConfirm(
+        `确认删除用户"${row.fullName || row.userName}"吗？`,
+      );
+      await requests.users.delete({
+        userId: Number(row.id),
+      });
+      messageAlert({ message: "用户删除成功" });
+      await this.getList();
+    } finally {
+      this.actionLoading = false;
+    }
+  },
+
+  // 处理操作（分发）
+  async handleAction(row: UserRecord, action: Record<string, any>) {
+    if (dataInfo.actionLoading) {
+      return;
+    }
+
+    const actionMap: Record<string, () => void | Promise<void>> = {
+      grantRoles: () => dataInfo.openGrantRoles(row),
+      edit: () => dataInfo.openEdit(row),
+      resetPassword: () => dataInfo.resetPassword(row),
+      delete: () => dataInfo.deleteUser(row),
     };
-    if (id) {
-      await requests.users.update('/api/user/update-user', requestBody);
-      messageAlert({ message: '用户更新成功' });
-    } else {
-      await requests.users.save('/api/user/create-user', {
-        ...requestBody,
-        password: '123456'
-      });
-      messageAlert({ message: '用户创建成功' });
-    }
-    await refreshPageData();
-  }
 
-  async function openGrantRoles(row: UserRecord) {
-    actionLoading.value = true;
-    try {
-      const [roleResult, userRoleResult] = await Promise.all([
-        requests.roles.list('/api/role/list-role', {
-          pageNum: 1,
-          pageSize: 100,
-          keyword: ''
-        }),
-        requests.userRoles.list('/api/user-role/list-user-role', {
-          userId: Number(row.id)
-        })
-      ]);
-      roleOptions.value = Array.isArray(roleResult?.records) ? roleResult.records.map((item: RolePageItem) => mapRoleOption(item)) : [];
-      checkedRoleIds.value = Array.isArray(userRoleResult)
-        ? userRoleResult.map((item: UserRoleInfo) => Number(item.roleId)).filter(item => !Number.isNaN(item))
-        : [];
-      selectedGrantUser.value = row;
-      grantDialogVisible.value = true;
-    } finally {
-      actionLoading.value = false;
+    const handler = actionMap[action.key];
+    if (handler) {
+      await handler();
     }
-  }
+  },
 
-  async function handleGrantRoles(roleIds: number[]) {
-    if (!selectedGrantUser.value) {
-      return;
-    }
-    await requests.userRoles.grant('/api/user-role/grant-user-roles', {
-      userId: Number(selectedGrantUser.value.id),
-      roleIds
-    });
-    messageAlert({ message: '用户角色分配成功' });
-  }
+  // 初始化
+  async init() {
+    await this.refreshPageData();
+  },
+});
 
-  async function handleAction(row: UserRecord, action: Record<string, any>) {
-    if (actionLoading.value) {
-      return;
-    }
-    if (action.key === 'grantRoles') {
-      await openGrantRoles(row);
-      return;
-    }
-    if (action.key === 'edit') {
-      selectedRecord.value = row;
-      dialogVisible.value = true;
-      return;
-    }
-    if (action.key === 'resetPassword') {
-      actionLoading.value = true;
-      try {
-        await messageConfirm(`确认重置用户“${row.fullName || row.userName}”的密码吗？`);
-        await requests.users.resetPassword('/api/user/reset-user-password', {
-          userId: Number(row.id)
-        });
-        messageAlert({ message: '密码重置成功' });
-        await refreshPageData();
-        return;
-      } finally {
-        actionLoading.value = false;
-      }
-    }
-    if (action.key === 'delete') {
-      actionLoading.value = true;
-      try {
-        await messageConfirm(`确认删除用户“${row.fullName || row.userName}”吗？`);
-        await requests.users.delete('/api/user/delete-user', {
-          userId: Number(row.id)
-        });
-        messageAlert({ message: '用户删除成功' });
-        await refreshPageData();
-      } finally {
-        actionLoading.value = false;
-      }
-    }
-  }
+const { pageInfo, loading, total, list } = toRefs(dataInfo);
 
-  onMounted(async () => {
-    await refreshPageData();
-  });
+// 初始化
+dataInfo.init();
+
+// 暴露
+defineExpose({ dataInfo });
 </script>
 
 <style scoped lang="scss">
-  .User {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
+.User-root {
+  height: 100%;
+}
 
-  .table-wrap {
-    padding: 16px;
-  }
+.table-wrap {
+  padding: 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-wrap :deep(.AppTableList-root) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.table-wrap :deep(.AppTable-root) {
+  flex: 1;
+  overflow: auto;
+}
 </style>
