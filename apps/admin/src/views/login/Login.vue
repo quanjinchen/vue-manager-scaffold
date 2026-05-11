@@ -88,10 +88,11 @@
 <script setup lang="ts" name="Login">
   import { onMounted, onUnmounted, reactive, ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
+  import type { AccessMenuItem } from '@vue-scaffold/types';
   import { messageAlert } from '@vue-scaffold/utils';
+  import { requests } from '@/api/requests';
   import { ensureAccessRoutes } from '@/router';
   import { useAuthStore, useMenuStore } from '@/stores';
-  import { loginByPassword } from '@/services/auth';
   import Account from '@/views/login/components/Account.vue';
 
   const router = useRouter();
@@ -100,6 +101,133 @@
   const menuStore = useMenuStore();
   const accountRef = ref<InstanceType<typeof Account>>();
   const canvasRef = ref<HTMLCanvasElement>();
+
+  type LoginInfoResponse = {
+    data?: Record<string, any>;
+    id?: string | number;
+    adminId?: string | number;
+    userId?: string | number;
+    username?: string;
+    userName?: string;
+    nickname?: string;
+    fullName?: string;
+    email?: string;
+    menuList?: Record<string, any>[];
+    permissions?: string[];
+    menus?: Record<string, any>[];
+    userInfo?: Record<string, any>;
+    profile?: {
+      id?: string;
+      name?: string;
+      email?: string;
+    };
+  };
+
+  function unwrapLoginInfo(loginInfo: LoginInfoResponse) {
+    if (loginInfo && typeof loginInfo === 'object' && loginInfo.data && typeof loginInfo.data === 'object') {
+      return loginInfo.data as Record<string, any>;
+    }
+    return loginInfo as Record<string, any>;
+  }
+
+  function collectPermissions(menuList: Record<string, any>[] = [], initialPermissions: string[] = []) {
+    const permissions = new Set<string>();
+    initialPermissions.forEach(item => {
+      if (item) {
+        permissions.add(String(item));
+      }
+    });
+
+    const loop = (list: Record<string, any>[]) => {
+      list.forEach(item => {
+        if (item.permissionCode ?? item.menuCode) {
+          permissions.add(String(item.permissionCode ?? item.menuCode));
+        }
+        if (Array.isArray(item.children) && item.children.length) {
+          loop(item.children);
+        }
+      });
+    };
+
+    loop(menuList);
+    return [...permissions];
+  }
+
+  function mapMenuType(menuType?: string | number) {
+    switch (String(menuType ?? '').toUpperCase()) {
+      case 'M':
+      case 'CATALOG':
+        return 1 as const;
+      case 'C':
+      case 'MENU':
+        return 2 as const;
+      case 'B':
+      case 'BUTTON':
+        return 4 as const;
+      default:
+        return Number(menuType) === 1 || Number(menuType) === 2 || Number(menuType) === 3 || Number(menuType) === 4
+          ? Number(menuType) as 1 | 2 | 3 | 4
+          : 2 as const;
+    }
+  }
+
+  function mapMenuList(menuList: Record<string, any>[] = []): AccessMenuItem[] {
+    return menuList
+      .filter(item => item && (item.path || (Array.isArray(item.children) && item.children.length)))
+      .map(item => ({
+        name: String(item.menuName ?? item.name ?? ''),
+        path: String(item.path ?? ''),
+        menuType: mapMenuType(item.menuType),
+        icon: item.icon ? String(item.icon) : undefined,
+        permissions: item.permissionCode ?? item.menuCode ? String(item.permissionCode ?? item.menuCode) : undefined,
+        children: Array.isArray(item.children) ? mapMenuList(item.children) : undefined
+      }));
+  }
+
+  async function loginByPassword(params: Record<string, string>) {
+    const loginResult = await requests.login.accountLogin(params, {
+      alertError: false,
+      needLogin: false
+    });
+
+    const token = String(loginResult?.token ?? '');
+    if (!token) {
+      throw new Error('登录响应缺少 token');
+    }
+
+    const loginInfo = await requests.login.getLoginInfo({}, {
+      axiosOptions: {
+        headers: {
+          Authorization: token
+        }
+      },
+      alertError: false
+    });
+
+    const rawLoginInfo = unwrapLoginInfo((loginInfo || {}) as LoginInfoResponse);
+    const userInfo = rawLoginInfo.userInfo ?? rawLoginInfo;
+    const rawMenus = Array.isArray(rawLoginInfo.menus)
+      ? rawLoginInfo.menus
+      : Array.isArray(userInfo.menus)
+        ? userInfo.menus
+        : Array.isArray(userInfo.menuList)
+          ? userInfo.menuList
+          : [];
+    const permissions = rawLoginInfo.permissions?.length
+      ? rawLoginInfo.permissions
+      : collectPermissions(rawMenus);
+
+    return {
+      token,
+      profile: {
+        id: String(rawLoginInfo.profile?.id ?? userInfo.adminId ?? userInfo.userId ?? userInfo.id ?? '1'),
+        name: String(rawLoginInfo.profile?.name ?? userInfo.nickname ?? userInfo.username ?? userInfo.userName ?? userInfo.fullName ?? params.account),
+        email: String(rawLoginInfo.profile?.email ?? userInfo.email ?? '')
+      },
+      permissions,
+      menuList: mapMenuList(rawMenus)
+    };
+  }
 
   const dataInfo = reactive({
     btnLoading: false,

@@ -134,7 +134,7 @@
   async function loadRoles() {
     loading.value = true;
     try {
-      const result = await requests.roles.list('/api/role/list-role', {
+      const result = await requests.roles.list({
         pageNum: 1,
         pageSize: 100,
         keyword: keyword.value
@@ -161,10 +161,10 @@
       remark: payload.remark ?? ''
     };
     if (id) {
-      await requests.roles.update('/api/role/update-role', requestBody);
+      await requests.roles.update(requestBody);
       messageAlert({ message: '角色更新成功' });
     } else {
-      await requests.roles.save('/api/role/create-role', requestBody);
+      await requests.roles.save(requestBody);
       messageAlert({ message: '角色创建成功' });
     }
     await loadRoles();
@@ -174,8 +174,8 @@
     actionLoading.value = true;
     try {
       const [menuResult, grantInfoResult] = await Promise.all([
-        requests.menus.tree('/api/menu/list-all-menu-tree', {}),
-        requests.roles.grantInfo('/api/role/get-role-grant-info-by-role-id', { id: Number(row.id) })
+        requests.menus.tree({}),
+        requests.roles.grantInfo({ id: Number(row.id) })
       ]);
       grantMenus.value = Array.isArray(menuResult) ? menuResult.map((item: MenuTreeItem) => mapMenuTree(item)) : [];
       checkedMenuIds.value = Array.isArray((grantInfoResult as RoleGrantInfo | undefined)?.menuIds)
@@ -192,7 +192,7 @@
     if (!selectedGrantRole.value) {
       return;
     }
-    await requests.roles.grantMenus('/api/role/grant-role-menus', {
+    await requests.roles.grantMenus({
       roleId: Number(selectedGrantRole.value.id),
       menuIds
     });
@@ -216,7 +216,7 @@
       actionLoading.value = true;
       try {
         await messageConfirm(`确认删除角色“${row.roleName}”吗？`);
-        await requests.roles.delete('/api/role/delete-role', {
+        await requests.roles.delete({
           roleId: Number(row.id)
         });
         messageAlert({ message: '角色删除成功' });

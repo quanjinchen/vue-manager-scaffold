@@ -5,19 +5,19 @@ import { appRequest, type AppRequestMethodOptions } from '@/api/app-request';
  */
 export const exampleRequests = {
   users: {
-    list: (url: string, params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) =>
-      appRequest.post(url, params, options),
-    detail: (url: string, params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) =>
-      appRequest.get(url, params, {
+    list: (params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) =>
+      appRequest.post('/api/user/list-user', params, options),
+    detail: (params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) =>
+      appRequest.get('/api/user/get-user-by-id', params, {
         appendPathOnGet: true,
         ...options
       }),
-    create: (url: string, params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) =>
-      appRequest.post(url, params, options)
+    create: (params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) =>
+      appRequest.post('/api/user/create-user', params, options)
   },
   operationLogs: {
-    pageSilently: (url: string, params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) =>
-      appRequest.post(url, params, {
+    pageSilently: (params: Record<string, any> = {}, options: AppRequestMethodOptions = {}) =>
+      appRequest.post('/api/operation-log/list-operation-log', params, {
         alertError: false,
         ...options
       })

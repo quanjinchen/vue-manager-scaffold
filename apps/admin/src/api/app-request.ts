@@ -92,6 +92,7 @@ function handleUnauthorized() {
 function createRequestClient() {
   const client = new RequestClient({
     baseURL: window.location.origin,
+    // baseURL: "http://10.30.1.181:18080",
     responseReturn: 'body',
     timeout: 30000
   });

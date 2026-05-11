@@ -23,7 +23,7 @@ import { exampleRequests } from './example-requests';
  */
 export async function loadUserDetailExample() {
   try {
-    const result = await exampleRequests.users.detail('/api/user/get-user-by-id', { id: 1001 });
+    const result = await exampleRequests.users.detail({ id: 1001 });
     console.log('user detail result:', result);
     return result;
   } catch (error) {
@@ -43,7 +43,7 @@ export async function loadUserDetailExample() {
  * - 若后端返回业务错误，例如“用户名已存在”，会直接抛错
  */
 export async function createUserExample() {
-  const result = await exampleRequests.users.create('/api/user/create-user', {
+  const result = await exampleRequests.users.create({
     username: 'new-user',
     password: '123456'
   });
@@ -63,7 +63,7 @@ export async function createUserExample() {
  * - 接口失败时仍然抛错，但因为接口层关闭了 `alertError`，不会触发统一错误提示
  */
 export async function silentPageExample() {
-  const result = await exampleRequests.operationLogs.pageSilently('/api/operation-log/list-operation-log', {
+  const result = await exampleRequests.operationLogs.pageSilently({
     pageNum: 1,
     pageSize: 10
   });
@@ -84,7 +84,7 @@ export async function silentPageExample() {
  * - 若权限不通过，返回 `undefined`
  */
 export async function listUsersExample() {
-  const result = await exampleRequests.users.list('/api/user/list-user', {
+  const result = await exampleRequests.users.list({
     pageNum: 1,
     pageSize: 10
   });

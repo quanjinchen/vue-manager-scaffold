@@ -4,27 +4,55 @@
     <div class="surface-card table-wrap">
       <AppTableList>
         <AppListHeader>
-          <div class="header-search">
-            <AppInput
-              v-model="dataInfo.keyword"
-              placeholder="按用户名、姓名、手机号或邮箱搜索"
-              :icon-props="{ place: 'suffix', name: 'Search' }"
-              @input="dataInfo.debounceSearch()"
-            />
-          </div>
-          <div class="header-handle">
-            <AppButton
-              :button-props="{ loading }"
-              @click="dataInfo.refreshPageData()"
-              >刷新</AppButton
-            >
-            <AppButton
-              :button-props="{ type: 'primary' }"
-              v-permission="'system:user:add'"
-              @click="dataInfo.openCreate()"
-              >新增用户</AppButton
-            >
-          </div>
+          <el-row :gutter="16" style="width: 100%">
+          <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
+              <AppInput
+                v-model="dataInfo.searchParams.username"
+                placeholder="用户名"
+                :icon-props="{ place: 'suffix', name: 'Search' }"
+                @input="dataInfo.debounceSearch()"
+              />
+            </el-col>
+            <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
+              <AppInput
+                v-model="dataInfo.searchParams.fullName"
+                placeholder="姓名"
+                :icon-props="{ place: 'suffix', name: 'Search' }"
+                @input="dataInfo.debounceSearch()"
+              />
+            </el-col>
+            <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
+              <AppInput
+                v-model="dataInfo.searchParams.phone"
+                placeholder="手机号"
+                :icon-props="{ place: 'suffix', name: 'Search' }"
+                @input="dataInfo.debounceSearch()"
+              />
+            </el-col>
+            <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
+              <AppInput
+                v-model="dataInfo.searchParams.email"
+                placeholder="邮箱"
+                :icon-props="{ place: 'suffix', name: 'Search' }"
+                @input="dataInfo.debounceSearch()"
+              />
+            </el-col>
+            <el-col :xs="24" :sm="24" :md="24" :lg="4" :xl="8">
+              <div class="header-handle">
+                <AppButton
+                  :button-props="{ loading }"
+                  @click="dataInfo.refreshPageData()"
+                  >刷新</AppButton
+                >
+                <AppButton
+                  :button-props="{ type: 'primary' }"
+                  v-permission="'system:user:add'"
+                  @click="dataInfo.openCreate()"
+                  >新增用户</AppButton
+                >
+              </div>
+            </el-col>
+          </el-row>
         </AppListHeader>
 
         <AppTable
@@ -91,7 +119,12 @@ const dataInfo: any = reactive({
   // 表格配置
   tableInfo,
   pageInfo: { pageNum: 1, pageSize: 10 },
-  keyword: "",
+  searchParams: {
+    username: "",
+    fullName: "",
+    phone: "",
+    email: "",
+  },
   dialogVisible: false,
   grantDialogVisible: false,
   selectedRecord: null as UserRecord | null,
@@ -104,7 +137,7 @@ const dataInfo: any = reactive({
   // 请求参数
   get params() {
     return {
-      keyword: this.keyword,
+      ...this.searchParams,
       ...this.pageInfo,
     };
   },
@@ -187,9 +220,7 @@ const dataInfo: any = reactive({
   async deleteUser(row: UserRecord) {
     this.actionLoading = true;
     try {
-      await messageConfirm(
-        `确认删除用户"${row.fullName || row.userName}"吗？`,
-      );
+      await messageConfirm(`确认删除用户"${row.fullName || row.userName}"吗？`);
       await requests.users.delete({
         userId: Number(row.id),
       });
@@ -256,5 +287,11 @@ defineExpose({ dataInfo });
 .table-wrap :deep(.AppTable-root) {
   flex: 1;
   overflow: auto;
+}
+
+.header-handle {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
 }
 </style>

@@ -80,7 +80,7 @@
   async function loadLogs() {
     loading.value = true;
     try {
-      const result = await requests.operationLogs.page('/api/operation-log/list-operation-log', {
+      const result = await requests.operationLogs.page({
         pageNum: pageNum.value,
         pageSize: pageSize.value
       });

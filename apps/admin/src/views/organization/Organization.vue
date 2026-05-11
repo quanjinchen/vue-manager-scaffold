@@ -134,7 +134,7 @@
   async function loadData() {
     loading.value = true;
     try {
-      const result = await requests.organizations.tree('/api/org/list-all-org-tree', {});
+      const result = await requests.organizations.tree({});
       organizations.value = Array.isArray(result) ? result.map((item: OrgTreeItem) => mapOrganization(item)) : [];
     } finally {
       loading.value = false;
@@ -171,10 +171,10 @@
       status: 1
     };
     if (id) {
-      await requests.organizations.update('/api/org/update-org', requestBody);
+      await requests.organizations.update(requestBody);
       messageAlert({ message: '组织更新成功' });
     } else {
-      await requests.organizations.save('/api/org/create-org', requestBody);
+      await requests.organizations.save(requestBody);
       messageAlert({ message: '组织创建成功' });
     }
     await loadData();
@@ -184,12 +184,12 @@
     actionLoading.value = true;
     try {
       const [userResult, orgUserResult] = await Promise.all([
-        requests.users.list('/api/user/list-user', {
+        requests.users.list({
           pageNum: 1,
           pageSize: 100,
           keyword: ''
         }),
-        requests.orgUsers.list('/api/org-user/list-org-user', {
+        requests.orgUsers.list({
           orgId: Number(row.id)
         })
       ]);
@@ -208,7 +208,7 @@
     if (!selectedGrantOrg.value) {
       return;
     }
-    await requests.orgUsers.grant('/api/org-user/grant-org-users', {
+    await requests.orgUsers.grant({
       orgId: Number(selectedGrantOrg.value.id),
       userIds
     });
@@ -232,7 +232,7 @@
       actionLoading.value = true;
       try {
         await messageConfirm(`确认删除组织“${row.orgName}”吗？`);
-        await requests.organizations.delete('/api/org/delete-org', {
+        await requests.organizations.delete({
           orgId: Number(row.id)
         });
         messageAlert({ message: '组织删除成功' });
