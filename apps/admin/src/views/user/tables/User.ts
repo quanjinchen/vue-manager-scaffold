@@ -1,11 +1,7 @@
 // 用户管理的表格
-import { userStatusOptions } from '@vue-scaffold/constants';
-import type { UserRecord } from '@/types/domain';
-
 export default {
   columns: [
     {
-      key: 'ordinal',
       label: '#',
       genre: '$ordinal',
       width: 64
@@ -16,8 +12,8 @@ export default {
       minWidth: 160
     },
     {
-      prop: 'nickname',
-      label: '昵称',
+      prop: 'fullName',
+      label: '姓名',
       minWidth: 180
     },
     {
@@ -26,40 +22,23 @@ export default {
       minWidth: 160
     },
     {
-      key: 'email',
       prop: 'email',
       label: '邮箱',
       minWidth: 220
     },
     {
-      key: 'orgNames',
-      prop: 'orgNames',
-      label: '所属组织',
-      minWidth: 220,
-      tagText: (row: UserRecord) => row.orgNames.join(', ') || '-'
-    },
-    {
-      key: 'status',
+      genre: '$tag',
       prop: 'status',
       label: '状态',
-      genre: '$tag',
       width: 120,
-      tagMap: userStatusOptions
+      dictKey: 'userStatusList'
     },
     {
-      key: 'updatedAt',
-      prop: 'updatedAt',
-      label: '更新时间',
-      genre: '$date',
-      minWidth: 180
-    },
-    {
-      key: 'actions',
+      fixed: 'right',
       label: '操作',
       genre: '$action',
-      width: 380,
+      width: 300,
       actions: [
-        { key: 'grantRoles', label: '分配角色', permissions: 'system:user:update' },
         { key: 'edit', label: '编辑', permissions: 'system:user:update' },
         { key: 'resetPassword', label: '重置密码', permissions: 'system:user:resetPassword', type: 'warning' },
         { key: 'delete', label: '删除', permissions: 'system:user:delete', type: 'danger' }

@@ -3,7 +3,17 @@
   "compilerOptions": {
     "composite": true,
     "declaration": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@vue-scaffold/constants": ["../constants/src/index.ts"],
+      "@vue-scaffold/types": ["../types/src/index.ts"],
+      "@vue-scaffold/utils": ["../utils/src/index.ts"]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"],
+  "references": [
+    { "path": "../constants" },
+    { "path": "../types" },
+    { "path": "../utils" }
+  ]
 }

@@ -7,6 +7,7 @@
   "module": "./src/index.ts",
   "types": "./src/index.ts",
   "dependencies": {
+    "@vue-scaffold/constants": "workspace:*",
     "@vue-scaffold/types": "workspace:*",
     "@vue-scaffold/utils": "workspace:*",
     "@element-plus/icons-vue": "^2.3.2",

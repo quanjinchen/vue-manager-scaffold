@@ -1,5 +1,9 @@
 <template>
-  <el-breadcrumb class="AppBreadcrumb-root" separator="/">
+  <el-breadcrumb
+    class="AppBreadcrumb-root"
+    :class="{ single: breadcrumbItems.length <= 1 }"
+    separator="/"
+  >
     <el-breadcrumb-item v-for="item in breadcrumbItems" :key="item.path">
       {{ item.title }}
     </el-breadcrumb-item>
@@ -24,53 +28,65 @@ const breadcrumbItems = computed(() =>
 
 <style scoped lang="scss">
 .AppBreadcrumb-root {
-  height: 56px;
-  padding: 0 24px;
-  background-color: #fff;
-  border-bottom: 1px solid #dfe0e2;
+  min-height: 0;
+  padding: 2px 4px 14px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
   display: flex;
   align-items: center;
   flex: none;
-  font-size: 16px;
-  .title {
-    color: var(--el-text-color-primary);
-    font-weight: bold;
-    flex: none;
-  }
-  .desc {
-    color: #646670;
-    font-size: 14px;
-    .el-link {
-      vertical-align: initial;
-    }
-  }
+  overflow-x: auto;
+  overflow-y: hidden;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+
+.AppBreadcrumb-root::-webkit-scrollbar {
+  display: none;
 }
 
 .AppBreadcrumb-root.single :deep(.el-breadcrumb__item) {
   .el-breadcrumb__inner {
-    color: var(--el-text-color-primary);
-    font-weight: bold;
+    color: #0f172a;
+    font-weight: 700;
+    letter-spacing: 0.01em;
   }
 }
 
 .AppBreadcrumb-root :deep(.el-breadcrumb__item) {
+  display: inline-flex;
+  align-items: center;
+
   .el-breadcrumb__separator {
-    font-weight: normal;
+    margin: 0 8px;
+    color: #b2bccb;
+    font-weight: 500;
   }
+
   .el-breadcrumb__inner {
-    color: #a7a8ad;
+    color: #94a3b8;
+    font-weight: 500;
+    transition: color 0.2s ease;
+
     &.is-link,
     a {
-      font-weight: normal !important;
-      transition: all 0.2s;
+      font-weight: 500 !important;
+      transition: color 0.2s ease;
+
       &:hover {
-        color: var(--el-color-primary);
+        color: #0041c0;
       }
     }
   }
+
   &:last-of-type {
     .el-breadcrumb__inner {
-      color: var(--el-text-color-primary);
+      color: #0f172a;
+      font-weight: 700;
     }
   }
 }

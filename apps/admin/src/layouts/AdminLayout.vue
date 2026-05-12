@@ -10,7 +10,7 @@
             {{ appStore.sidebarCollapsed ? "展开菜单" : "收起菜单" }}
           </AppButton>
         </div>
-        <div  class="right">
+        <div class="right">
           <span class="welcome"
             >你好，{{ authStore.profile.name || "未登录用户" }}</span
           >
@@ -147,9 +147,13 @@ async function logout() {
   padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
   height: 100%;
   overflow: hidden;
+}
+
+.AdminLayout-content :deep(.AppBreadcrumb-root) {
+  margin-bottom: 0;
 }
 
 .right {

@@ -5,8 +5,13 @@
     :footer-props="{
       buttons: [
         { text: '取消', close: true, buttonProps: {} },
-        { text: submitLoading ? '保存中...' : '保存', close: false, buttonProps: { type: 'primary', loading: submitLoading }, click: handleSubmit }
-      ]
+        {
+          text: submitLoading ? '保存中...' : '保存',
+          close: false,
+          buttonProps: { type: 'primary', loading: submitLoading },
+          click: handleSubmit,
+        },
+      ],
     }"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
@@ -27,17 +32,33 @@
       <el-row :gutter="16">
         <el-col :span="12">
           <el-form-item label="菜单类型" prop="menuType">
-            <AppSelect v-model="form.menuType" :list="menuTypeOptions" :select-props="{ placeholder: '请选择菜单类型' }" />
+            <AppSelect
+              v-model="form.menuType"
+              :list="dictStore.menuTypeList"
+              :select-props="{ placeholder: '请选择菜单类型' }"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="菜单名称" prop="menuName">
-            <AppInput v-model="form.menuName" v-trim placeholder="请输入菜单名称" />
+            <AppInput
+              v-model="form.menuName"
+              v-trim
+              placeholder="请输入菜单名称"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="排序" prop="orderNum">
-            <AppInputNumber v-model="form.orderNum" :input-number-props="{ min: 1, max: 9999, style: 'width: 100%', placeholder: '请输入排序' }" />
+            <AppInputNumber
+              v-model="form.orderNum"
+              :input-number-props="{
+                min: 1,
+                max: 9999,
+                style: 'width: 100%',
+                placeholder: '请输入排序',
+              }"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -47,7 +68,11 @@
         </el-col>
         <el-col :span="12">
           <el-form-item label="权限编码" prop="menuCode">
-            <AppInput v-model="form.menuCode" v-trim placeholder="请输入权限编码" />
+            <AppInput
+              v-model="form.menuCode"
+              v-trim
+              placeholder="请输入权限编码"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -61,72 +86,72 @@
 </template>
 
 <script setup lang="ts" name="MenuFormDialog">
-  import { computed, reactive, ref, watch } from 'vue';
-  import type { FormInstance } from 'element-plus';
-  import { menuTypeOptions } from '@vue-scaffold/constants';
-import type { MenuRecord } from '@/types/domain';
+import { computed, reactive, ref, watch } from "vue";
+import type { FormInstance } from "element-plus";
+import { dictStore } from "@vue-scaffold/constants";
+import type { MenuRecord } from "@/types/domain";
 
-  const props = defineProps<{
-    modelValue: boolean;
-    record?: MenuRecord | null;
-    menus: MenuRecord[];
-  }>();
+const props = defineProps<{
+  modelValue: boolean;
+  record?: MenuRecord | null;
+  menus: MenuRecord[];
+}>();
 
-  const emit = defineEmits<{
-    'update:modelValue': [boolean];
-    submit: [payload: Omit<MenuRecord, 'id' | 'children'>, id?: string];
-  }>();
+const emit = defineEmits<{
+  "update:modelValue": [boolean];
+  submit: [payload: Omit<MenuRecord, "id" | "children">, id?: string];
+}>();
 
-  const formRef = ref<FormInstance>();
-  const submitLoading = ref(false);
+const formRef = ref<FormInstance>();
+const submitLoading = ref(false);
 
-  const visible = computed({
-    get: () => props.modelValue,
-    set: value => emit('update:modelValue', value)
-  });
+const visible = computed({
+  get: () => props.modelValue,
+  set: (value) => emit("update:modelValue", value),
+});
 
-  const isEdit = computed(() => Boolean(props.record?.id));
-  const menuTree = computed(() => props.menus ?? []);
+const isEdit = computed(() => Boolean(props.record?.id));
+const menuTree = computed(() => props.menus ?? []);
 
-  const form = reactive<Omit<MenuRecord, 'id' | 'children'>>({
-    parentId: null,
-    menuType: 'C',
-    menuName: '',
-    path: '',
-    menuCode: '',
-    orderNum: 1,
-    enabled: true
-  });
+const form = reactive<Omit<MenuRecord, "id" | "children">>({
+  parentId: null,
+  menuType: "C",
+  menuName: "",
+  path: "",
+  menuCode: "",
+  orderNum: 1,
+  enabled: true,
+});
 
-  const rules = {
-    menuType: [{ required: true, message: '请选择菜单类型', trigger: 'change' }],
-    menuName: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
-    path: [{ required: true, message: '请输入路径', trigger: 'blur' }],
-    menuCode: [{ required: true, message: '请输入权限编码', trigger: 'blur' }]
-  };
+const rules = {
+  menuType: [{ required: true, message: "请选择菜单类型", trigger: "change" }],
+  menuName: [{ required: true, message: "请输入菜单名称", trigger: "blur" }],
+  path: [{ required: true, message: "请输入路径", trigger: "blur" }],
+  menuCode: [{ required: true, message: "请输入权限编码", trigger: "blur" }],
+};
 
-  watch(
-    () => props.record,
-    value => {
-      form.parentId = value?.parentId ?? null;
-      form.menuType = value?.menuType ?? 'C';
-      form.menuName = value?.menuName ?? '';
-      form.path = value?.path ?? '';
-      form.menuCode = value?.menuCode ?? '';
-      form.orderNum = value?.orderNum ?? 1;
-      form.enabled = value?.enabled ?? true;
-    },
-    { immediate: true }
-  );
+watch(
+  () => props.record,
+  (value) => {
+    form.parentId = value?.parentId ?? null;
+    form.menuType = value?.menuType ?? "C";
+    form.menuName = value?.menuName ?? "";
+    form.path = value?.path ?? "";
+    form.menuCode = value?.menuCode ?? "";
+    form.orderNum = value?.orderNum ?? 1;
+    form.enabled = value?.enabled ?? true;
+  },
+  { immediate: true },
+);
 
-  async function handleSubmit() {
-    await formRef.value?.validate();
-    submitLoading.value = true;
-    try {
-      await emit('submit', { ...form }, props.record?.id);
-      visible.value = false;
-    } finally {
-      submitLoading.value = false;
-    }
+async function handleSubmit() {
+  await formRef.value?.validate();
+  submitLoading.value = true;
+  try {
+    await emit("submit", { ...form }, props.record?.id);
+    visible.value = false;
+  } finally {
+    submitLoading.value = false;
   }
+}
 </script>

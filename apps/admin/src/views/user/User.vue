@@ -1,86 +1,78 @@
 <!-- 用户管理 -->
 <template>
-  <main class="User-root AppTableList-wrap">
-    <div class="surface-card table-wrap">
-      <AppTableList>
-        <AppListHeader>
-          <el-row :gutter="16" style="width: 100%">
+  <main class="User-root">
+    <AppTableList>
+      <AppListHeader>
+        <el-row :gutter="16" style="width: 100%">
           <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
-              <AppInput
-                v-model="dataInfo.searchParams.username"
-                placeholder="用户名"
-                :icon-props="{ place: 'suffix', name: 'Search' }"
-                @input="dataInfo.debounceSearch()"
-              />
-            </el-col>
-            <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
-              <AppInput
-                v-model="dataInfo.searchParams.fullName"
-                placeholder="姓名"
-                :icon-props="{ place: 'suffix', name: 'Search' }"
-                @input="dataInfo.debounceSearch()"
-              />
-            </el-col>
-            <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
-              <AppInput
-                v-model="dataInfo.searchParams.phone"
-                placeholder="手机号"
-                :icon-props="{ place: 'suffix', name: 'Search' }"
-                @input="dataInfo.debounceSearch()"
-              />
-            </el-col>
-            <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
-              <AppInput
-                v-model="dataInfo.searchParams.email"
-                placeholder="邮箱"
-                :icon-props="{ place: 'suffix', name: 'Search' }"
-                @input="dataInfo.debounceSearch()"
-              />
-            </el-col>
-            <el-col :xs="24" :sm="24" :md="24" :lg="4" :xl="8">
-              <div class="header-handle">
-                <AppButton
-                  :button-props="{ loading }"
-                  @click="dataInfo.refreshPageData()"
-                  >刷新</AppButton
-                >
-                <AppButton
-                  :button-props="{ type: 'primary' }"
-                  v-permission="'system:user:add'"
-                  @click="dataInfo.openCreate()"
-                  >新增用户</AppButton
-                >
-              </div>
-            </el-col>
-          </el-row>
-        </AppListHeader>
+            <AppInput
+              v-model="searchParams.username"
+              placeholder="用户名"
+              :icon-props="{ place: 'suffix', name: 'Search' }"
+              @input="dataInfo.debounceSearch()"
+            />
+          </el-col>
+          <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
+            <AppInput
+              v-model="searchParams.fullName"
+              placeholder="姓名"
+              :icon-props="{ place: 'suffix', name: 'Search' }"
+              @input="dataInfo.debounceSearch()"
+            />
+          </el-col>
+          <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
+            <AppInput
+              v-model="searchParams.phone"
+              placeholder="手机号"
+              :icon-props="{ place: 'suffix', name: 'Search' }"
+              @input="dataInfo.debounceSearch()"
+            />
+          </el-col>
+          <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
+            <AppInput
+              v-model="searchParams.email"
+              placeholder="邮箱"
+              :icon-props="{ place: 'suffix', name: 'Search' }"
+              @input="dataInfo.debounceSearch()"
+            />
+          </el-col>
+          <el-col :xs="24" :sm="24" :md="24" :lg="4" :xl="8">
+            <div class="header-handle">
+              <AppButton
+                :button-props="{ loading }"
+                @click="dataInfo.refreshPageData()"
+                >刷新</AppButton
+              >
+              <AppButton
+                :button-props="{ type: 'primary' }"
+                v-permission="'system:user:add'"
+                @click="dataInfo.openCreate()"
+                >新增用户</AppButton
+              >
+            </div>
+          </el-col>
+        </el-row>
+      </AppListHeader>
 
-        <AppTable
-          :table-props="{ data: list }"
-          :table-info="dataInfo.tableInfo"
-          :page-info="pageInfo"
-          :loading="loading"
-          @handle-click="dataInfo.handleAction"
-        />
+      <AppTable
+        :table-props="{ data: list }"
+        :table-info="tableInfo"
+        :page-info="pageInfo"
+        :loading="loading"
+        @handle-click="dataInfo.handleAction"
+      />
 
-        <AppPager
-          v-model:page-index="pageInfo.pageNum"
-          v-model:page-size="pageInfo.pageSize"
-          :total="total"
-          @change="dataInfo.getList()"
-        />
-      </AppTableList>
-    </div>
+      <AppPager
+        v-model:page-index="pageInfo.pageNum"
+        v-model:page-size="pageInfo.pageSize"
+        :total="total"
+        @change="dataInfo.getList()"
+      />
+    </AppTableList>
 
     <UserFormDialog
       v-model="dataInfo.dialogVisible"
-      :record="dataInfo.selectedRecord"
-      :organizations="dataInfo.organizations"
-      @success="dataInfo.getList()"
-    />
-    <GrantUserRolesDialog
-      v-model="dataInfo.grantDialogVisible"
-      :user="dataInfo.selectedGrantUser"
+      :selectItem="dataInfo.selectedRecord"
       @success="dataInfo.getList()"
     />
   </main>
@@ -90,34 +82,12 @@
 import { reactive, toRefs } from "vue";
 import { messageAlert, messageConfirm, debounce } from "@vue-scaffold/utils";
 import UserFormDialog from "@/views/user/components/UserFormDialog.vue";
-import GrantUserRolesDialog from "@/views/user/components/GrantUserRolesDialog.vue";
 import { requests } from "@/api/requests";
-import type { OrganizationRecord, UserRecord } from "@/types/domain";
+import type { UserRecord } from "@/types/domain";
 import tableInfo from "@/views/user/tables/User";
-
-type UserPageItem = {
-  id: number | string;
-  username?: string;
-  nickname?: string;
-  phone?: string;
-  email?: string;
-  orgId?: number | string | null;
-  status?: number | null;
-};
-
-type OrgTreeItem = {
-  id: number | string;
-  parentId?: number | string | null;
-  name?: string;
-  orgCode?: string;
-  sortOrder?: number;
-  children?: OrgTreeItem[];
-};
 
 // 数据信息
 const dataInfo: any = reactive({
-  // 表格配置
-  tableInfo,
   pageInfo: { pageNum: 1, pageSize: 10 },
   searchParams: {
     username: "",
@@ -126,10 +96,7 @@ const dataInfo: any = reactive({
     email: "",
   },
   dialogVisible: false,
-  grantDialogVisible: false,
   selectedRecord: null as UserRecord | null,
-  selectedGrantUser: null as UserRecord | null,
-  organizations: [] as OrganizationRecord[],
   total: 0,
   list: [] as UserRecord[],
   loading: false,
@@ -153,17 +120,10 @@ const dataInfo: any = reactive({
     }
   },
 
-  // 获取组织列表
-  async getOrganizations() {
-    const data = await requests.organizations.tree();
-    this.organizations = data;
-  },
-
   // 刷新页面数据
   async refreshPageData() {
     this.loading = true;
     try {
-      await this.getOrganizations();
       await this.getList();
     } finally {
       this.loading = false;
@@ -185,12 +145,6 @@ const dataInfo: any = reactive({
   openCreate() {
     this.selectedRecord = null;
     this.dialogVisible = true;
-  },
-
-  // 打开分配角色对话框
-  openGrantRoles(row: UserRecord) {
-    this.selectedGrantUser = row;
-    this.grantDialogVisible = true;
   },
 
   // 打开编辑对话框
@@ -238,16 +192,13 @@ const dataInfo: any = reactive({
     }
 
     const actionMap: Record<string, () => void | Promise<void>> = {
-      grantRoles: () => dataInfo.openGrantRoles(row),
       edit: () => dataInfo.openEdit(row),
       resetPassword: () => dataInfo.resetPassword(row),
       delete: () => dataInfo.deleteUser(row),
     };
 
     const handler = actionMap[action.key];
-    if (handler) {
-      await handler();
-    }
+    handler?.();
   },
 
   // 初始化
@@ -256,7 +207,7 @@ const dataInfo: any = reactive({
   },
 });
 
-const { pageInfo, loading, total, list } = toRefs(dataInfo);
+const { pageInfo, loading, total, list, searchParams } = toRefs(dataInfo);
 
 // 初始化
 dataInfo.init();
@@ -268,25 +219,6 @@ defineExpose({ dataInfo });
 <style scoped lang="scss">
 .User-root {
   height: 100%;
-}
-
-.table-wrap {
-  padding: 16px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.table-wrap :deep(.AppTableList-root) {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.table-wrap :deep(.AppTable-root) {
-  flex: 1;
-  overflow: auto;
 }
 
 .header-handle {

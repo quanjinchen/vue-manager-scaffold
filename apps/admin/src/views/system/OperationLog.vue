@@ -1,39 +1,37 @@
 <template>
   <section class="OperationLog">
-    <div class="surface-card table-wrap">
-      <AppTableList>
-        <AppListHeader>
-          <div class="header-search">
-            <div class="summary-text">
-              记录管理员登录、退出、菜单维护、用户维护等操作行为，便于后续审计排查。
-            </div>
+    <AppTableList>
+      <AppListHeader>
+        <div class="header-search">
+          <div class="summary-text">
+            记录管理员登录、退出、菜单维护、用户维护等操作行为，便于后续审计排查。
           </div>
-          <div class="header-handle">
-            <AppButton :button-props="{ loading }" @click="loadLogs">刷新</AppButton>
-          </div>
-        </AppListHeader>
-
-        <AppTable
-          :table-props="{ data: rows }"
-          :table-info="tableInfo"
-          :page-info="{ pageNum, pageSize }"
-          :loading="loading"
-        />
-
-        <div class="pagination-wrap">
-          <el-pagination
-            background
-            layout="total, prev, pager, next, sizes"
-            :total="total"
-            :current-page="pageNum"
-            :page-size="pageSize"
-            :page-sizes="[10, 20, 50, 100]"
-            @current-change="handleCurrentChange"
-            @size-change="handleSizeChange"
-          />
         </div>
-      </AppTableList>
-    </div>
+        <div class="header-handle">
+          <AppButton :button-props="{ loading }" @click="loadLogs">刷新</AppButton>
+        </div>
+      </AppListHeader>
+
+      <AppTable
+        :table-props="{ data: rows }"
+        :table-info="tableInfo"
+        :page-info="{ pageNum, pageSize }"
+        :loading="loading"
+      />
+
+      <div class="pagination-wrap">
+        <el-pagination
+          background
+          layout="total, prev, pager, next, sizes"
+          :total="total"
+          :current-page="pageNum"
+          :page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          @current-change="handleCurrentChange"
+          @size-change="handleSizeChange"
+        />
+      </div>
+    </AppTableList>
   </section>
 </template>
 
@@ -114,10 +112,6 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-  }
-
-  .table-wrap {
-    padding: 16px;
   }
 
   .summary-text {

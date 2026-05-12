@@ -37,7 +37,7 @@ export const requests = {
         ...options
       });
     },
-    save(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
+    create(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
       return appRequest.post('/api/user/create-user', params, options);
     },
     update(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {

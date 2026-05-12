@@ -1,6 +1,6 @@
 <template>
   <el-select v-model="model" class="AppSelect-root" v-bind="selectPropsResult">
-    <el-option v-for="item in list" :key="item.id" :label="item.name" :value="item.id" />
+    <el-option v-for="item in list" :key="item.value" :label="item.label" :value="item.value" />
   </el-select>
 </template>
 

@@ -1,31 +1,29 @@
 <template>
   <section class="Role">
-    <div class="surface-card table-wrap">
-      <AppTableList>
-        <AppListHeader>
-          <div class="header-search">
-            <AppInput
-              v-model="keyword"
-              placeholder="按角色名称或编码搜索"
-              :icon-props="{ place: 'suffix', name: 'Search' }"
-              @update:model-value="loadRoles"
-            />
-          </div>
-          <div class="header-handle">
-            <AppButton :button-props="{ loading }" @click="loadRoles()">刷新</AppButton>
-            <AppButton :button-props="{ type: 'primary' }" v-permission="'system:role:update'" @click="openCreate()">新增角色</AppButton>
-          </div>
-        </AppListHeader>
+    <AppTableList>
+      <AppListHeader>
+        <div class="header-search">
+          <AppInput
+            v-model="keyword"
+            placeholder="按角色名称或编码搜索"
+            :icon-props="{ place: 'suffix', name: 'Search' }"
+            @update:model-value="loadRoles"
+          />
+        </div>
+        <div class="header-handle">
+          <AppButton :button-props="{ loading }" @click="loadRoles()">刷新</AppButton>
+          <AppButton :button-props="{ type: 'primary' }" v-permission="'system:role:update'" @click="openCreate()">新增角色</AppButton>
+        </div>
+      </AppListHeader>
 
-        <AppTable
-          :table-props="{ data: rows }"
-          :table-info="tableInfo"
-          :page-info="{ pageNum: 1, pageSize: 10 }"
-          :loading="loading"
-          @handle-click="handleAction"
-        />
-      </AppTableList>
-    </div>
+      <AppTable
+        :table-props="{ data: rows }"
+        :table-info="tableInfo"
+        :page-info="{ pageNum: 1, pageSize: 10 }"
+        :loading="loading"
+        @handle-click="handleAction"
+      />
+    </AppTableList>
 
     <RoleFormDialog v-model="dialogVisible" :record="selectedRecord" @submit="handleSubmit" />
     <GrantRoleMenusDialog
@@ -237,9 +235,5 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-  }
-
-  .table-wrap {
-    padding: 16px;
   }
 </style>

@@ -1,2 +1,2 @@
 export * from './storage';
-export * from './options/admin';
+export * from './dict';
