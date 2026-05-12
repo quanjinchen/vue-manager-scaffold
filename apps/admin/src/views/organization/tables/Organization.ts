@@ -2,10 +2,10 @@ import type { OrganizationRecord } from '@/types/domain';
 
 export default {
   columns: [
-    { key: 'name', prop: 'orgName', label: '组织名称', minWidth: 180 },
-    { key: 'shortName', prop: 'shortName', label: '组织简称', minWidth: 120 },
-    { key: 'orderNum', prop: 'orderNum', label: '排序', minWidth: 80 },
-    { key: 'remark', prop: 'remark', label: '备注', minWidth: 180 },
+    { prop: 'orgName', label: '组织名称', minWidth: 180 },
+    { prop: 'shortName', label: '组织简称', minWidth: 120 },
+    { prop: 'orderNum', label: '排序', minWidth: 80 },
+    { prop: 'remark', label: '备注', minWidth: 180 },
     {
       key: 'actions',
       label: '操作',

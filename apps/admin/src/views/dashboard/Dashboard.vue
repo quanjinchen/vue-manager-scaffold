@@ -524,6 +524,7 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+    overflow-y: auto;
   }
 
   .hero {

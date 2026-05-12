@@ -121,6 +121,8 @@ export const $apis = {
 6. 删除、重置、授权等有副作用操作，必须先确认，再请求，再刷新列表。
 7. 表格行操作统一通过 `handleAction` 分发，不要把大量业务逻辑直接塞进表格列定义。
 8. 页面中不要直接声明 `const tableInfo = ...`，表格列配置必须从 `tables/*.ts` 导入。
+9. `handleAction` 内部不要使用 `this`，统一直接调用 `dataInfo.xxx()` 或读取 `dataInfo.xxx`，避免上下文不清晰。
+10. `tableInfo.columns` 中，有 `prop` 的列不要重复声明 `key`，默认直接使用 `prop` 作为唯一值；只有 `$ordinal`、`$action` 这类没有 `prop` 的特殊列才保留 `key`。
 
 列表页示例
 
@@ -192,8 +194,8 @@ const dataInfo = reactive({
   },
   async handleAction(row: UserRecord, action: Record<string, any>) {
     const actionMap: Record<string, () => void | Promise<void>> = {
-      edit: () => this.openEdit(row),
-      delete: () => this.deleteUser(row),
+      edit: () => dataInfo.openEdit(row),
+      delete: () => dataInfo.deleteUser(row),
     };
     await actionMap[action.key]?.();
   },

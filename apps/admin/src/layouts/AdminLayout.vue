@@ -2,14 +2,7 @@
   <div class="AdminLayout-root">
     <el-container class="layout-wrapper">
       <el-header class="AdminLayout-header">
-        <div class="left">
-          <AppButton
-            :button-props="{ text: true }"
-            @click="appStore.toggleSidebar()"
-          >
-            {{ appStore.sidebarCollapsed ? "展开菜单" : "收起菜单" }}
-          </AppButton>
-        </div>
+        <div class="left"></div>
         <div class="right">
           <span class="welcome"
             >你好，{{ authStore.profile.name || "未登录用户" }}</span
@@ -23,11 +16,22 @@
           class="AdminLayout-sidebar"
           :style="{ width: appStore.sidebarWidth }"
         >
-          <AppMenu
-            :list="menuStore.menuTree"
-            :collapsed="appStore.sidebarCollapsed"
-            class="AdminLayout-menu"
-        /></el-aside>
+          <button
+            class="AdminLayout-sidebarToggle"
+            type="button"
+            :title="appStore.sidebarCollapsed ? '展开菜单' : '收起菜单'"
+            @click="appStore.toggleSidebar()"
+          >
+            <AppIcon :name="appStore.sidebarCollapsed ? 'DArrowRight' : 'DArrowLeft'" />
+          </button>
+          <div class="AdminLayout-sidebarInner">
+            <AppMenu
+              :list="menuStore.menuTree"
+              :collapsed="appStore.sidebarCollapsed"
+              class="AdminLayout-menu"
+            />
+          </div>
+        </el-aside>
         <el-main class="AdminLayout-main-wrapper"
           ><main class="AdminLayout-main">
             <section class="AdminLayout-content">
@@ -43,6 +47,7 @@
 <script setup lang="ts" name="AdminLayout">
 import { useRouter } from "vue-router";
 import { messageConfirm } from "@vue-scaffold/utils";
+import { AppIcon } from "@vue-scaffold/ui";
 import { useAppStore, useAuthStore, useMenuStore } from "@/stores";
 
 const router = useRouter();
@@ -96,12 +101,42 @@ async function logout() {
 }
 
 .AdminLayout-sidebar {
+  position: relative;
   background: #101828;
   color: #fff;
   transition: width 0.2s ease;
+  overflow: visible;
+  height: 100%;
+}
+
+.AdminLayout-sidebarToggle {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translate(50%, -50%);
+  width: 32px;
+  height: 56px;
+  border: 1px solid #d8e0ec;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #344054;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  z-index: 3;
+}
+
+.AdminLayout-sidebarToggle:hover {
+  color: #101828;
+  background: #f8fafc;
+}
+
+.AdminLayout-sidebarInner {
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  height: 100%;
 }
 
 .AdminLayout-logo {
@@ -164,5 +199,9 @@ async function logout() {
 
 .welcome {
   color: #475467;
+}
+
+.left {
+  min-width: 1px;
 }
 </style>

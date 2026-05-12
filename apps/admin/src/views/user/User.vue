@@ -198,7 +198,7 @@ const dataInfo: any = reactive({
     };
 
     const handler = actionMap[action.key];
-    handler?.();
+    await handler?.();
   },
 
   // 初始化

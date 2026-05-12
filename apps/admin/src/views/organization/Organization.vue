@@ -190,14 +190,14 @@ const dataInfo = reactive({
     }
   },
   async handleAction(row: OrganizationRecord, action: Record<string, any>) {
-    if (this.actionLoading) {
+    if (dataInfo.actionLoading) {
       return;
     }
 
     const actionMap: Record<string, () => void | Promise<void>> = {
-      grantUsers: () => this.openGrantUsers(row),
-      edit: () => this.openEdit(row),
-      delete: () => this.deleteOrganization(row),
+      grantUsers: () => dataInfo.openGrantUsers(row),
+      edit: () => dataInfo.openEdit(row),
+      delete: () => dataInfo.deleteOrganization(row),
     };
 
     await actionMap[action.key]?.();

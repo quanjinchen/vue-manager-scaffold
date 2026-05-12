@@ -3,10 +3,9 @@ import type { RoleRecord } from '@/types/domain';
 export default {
   columns: [
     { key: 'ordinal', label: '#', genre: '$ordinal', width: 64 },
-    { key: 'roleName', prop: 'roleName', label: '角色名称', minWidth: 180 },
-    { key: 'roleCode', prop: 'roleCode', label: '角色编码', minWidth: 180 },
+    { prop: 'roleName', label: '角色名称', minWidth: 180 },
+    { prop: 'roleCode', label: '角色编码', minWidth: 180 },
     {
-      key: 'systemDefault',
       prop: 'systemDefault',
       label: '角色类型',
       genre: '$tag',
@@ -14,12 +13,13 @@ export default {
       tagText: (row: RoleRecord) => (row.systemDefault ? '内置角色' : '自定义角色'),
       tagType: (row: RoleRecord) => (row.systemDefault ? 'success' : 'primary'),
     },
-    { key: 'userNum', prop: 'userNum', label: '用户数', width: 100 },
-    { key: 'userGroupNum', prop: 'userGroupNum', label: '分组数', width: 100 },
-    { key: 'updatedAt', prop: 'updatedAt', label: '更新时间', genre: '$date', minWidth: 180 },
+    { prop: 'userNum', label: '用户数', width: 100 },
+    { prop: 'userGroupNum', label: '分组数', width: 100 },
+    { prop: 'updatedAt', label: '更新时间', genre: '$date', minWidth: 180 },
     {
       key: 'actions',
       label: '操作',
+      fixed: "right",
       genre: '$action',
       width: 280,
       actions: [

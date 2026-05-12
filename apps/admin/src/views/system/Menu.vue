@@ -163,14 +163,14 @@ const dataInfo = reactive({
     }
   },
   async handleAction(row: MenuRecord, action: Record<string, any>) {
-    if (this.actionLoading) {
+    if (dataInfo.actionLoading) {
       return;
     }
 
     const actionMap: Record<string, () => void | Promise<void>> = {
-      create: () => this.openCreateChild(row),
-      edit: () => this.openEdit(row),
-      delete: () => this.deleteMenu(row),
+      create: () => dataInfo.openCreateChild(row),
+      edit: () => dataInfo.openEdit(row),
+      delete: () => dataInfo.deleteMenu(row),
     };
 
     await actionMap[action.key]?.();
