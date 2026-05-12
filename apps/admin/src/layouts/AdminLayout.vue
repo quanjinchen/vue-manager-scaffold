@@ -1,37 +1,9 @@
 <template>
   <div class="AdminLayout-root">
     <el-container class="layout-wrapper">
-      <el-header class="AdminLayout-header">
-        <div class="left"></div>
-        <div class="right">
-          <span class="welcome"
-            >你好，{{ authStore.profile.name || "未登录用户" }}</span
-          >
-          <AppButton @click="logout">退出登录</AppButton>
-        </div>
-      </el-header>
+      <AdminHeader />
       <el-container class="layout-container">
-        <el-aside
-          width="200px"
-          class="AdminLayout-sidebar"
-          :style="{ width: appStore.sidebarWidth }"
-        >
-          <button
-            class="AdminLayout-sidebarToggle"
-            type="button"
-            :title="appStore.sidebarCollapsed ? '展开菜单' : '收起菜单'"
-            @click="appStore.toggleSidebar()"
-          >
-            <AppIcon :name="appStore.sidebarCollapsed ? 'DArrowRight' : 'DArrowLeft'" />
-          </button>
-          <div class="AdminLayout-sidebarInner">
-            <AppMenu
-              :list="menuStore.menuTree"
-              :collapsed="appStore.sidebarCollapsed"
-              class="AdminLayout-menu"
-            />
-          </div>
-        </el-aside>
+        <AdminMenu />
         <el-main class="AdminLayout-main-wrapper"
           ><main class="AdminLayout-main">
             <section class="AdminLayout-content">
@@ -45,35 +17,30 @@
 </template>
 
 <script setup lang="ts" name="AdminLayout">
-import { useRouter } from "vue-router";
-import { messageConfirm } from "@vue-scaffold/utils";
-import { AppIcon } from "@vue-scaffold/ui";
-import { useAppStore, useAuthStore, useMenuStore } from "@/stores";
+import { useAppStore } from "@/stores";
+import AdminHeader from "./components/AdminHeader.vue";
+import AdminMenu from "./components/AdminMenu.vue";
 
-const router = useRouter();
-const authStore = useAuthStore();
 const appStore = useAppStore();
-const menuStore = useMenuStore();
-
-async function logout() {
-  await messageConfirm("确认退出当前登录状态吗？", "退出确认", {
-    confirmButtonText: "退出",
-    cancelButtonText: "取消",
-  });
-  await authStore.logout();
-  router.replace("/login");
-}
 </script>
 
 <style scoped lang="scss">
 .AdminLayout-root {
+  --layout-bg: #f3f6fb;
+  --sidebar-width: v-bind('appStore.sidebarWidth');
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: #eef3f9;
+  background:
+    radial-gradient(circle at top left, rgba(0, 65, 192, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(94, 234, 212, 0.08), transparent 24%),
+    linear-gradient(180deg, #f7f9fc 0%, var(--layout-bg) 100%);
 
   .layout-wrapper {
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   .animate-enter-from {
@@ -94,88 +61,29 @@ async function logout() {
   }
 
   .layout-container {
-    display: flex;
-    height: calc(100% - 64px);
+    flex: 1;
+    min-height: 0;
+    padding-left: var(--sidebar-width);
     overflow: hidden;
   }
-}
-
-.AdminLayout-sidebar {
-  position: relative;
-  background: #101828;
-  color: #fff;
-  transition: width 0.2s ease;
-  overflow: visible;
-  height: 100%;
-}
-
-.AdminLayout-sidebarToggle {
-  position: absolute;
-  top: 50%;
-  right: 0;
-  transform: translate(50%, -50%);
-  width: 32px;
-  height: 56px;
-  border: 1px solid #d8e0ec;
-  border-radius: 999px;
-  background: #ffffff;
-  color: #344054;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
-  z-index: 3;
-}
-
-.AdminLayout-sidebarToggle:hover {
-  color: #101828;
-  background: #f8fafc;
-}
-
-.AdminLayout-sidebarInner {
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.AdminLayout-logo {
-  height: 64px;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.AdminLayout-menu {
-  border-right: 0;
-  background: transparent;
 }
 
 .AdminLayout-main-wrapper {
   flex: 1;
   min-width: 0;
-  height: 100%;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0)),
+    transparent;
 }
 
 .AdminLayout-main {
   min-width: 0;
   width: 100%;
   height: 100%;
-}
-
-.AdminLayout-header {
-  height: 64px;
-  background: rgba(255, 255, 255, 0.92);
-  border-bottom: 1px solid #d8e0ec;
-  padding: 0 0px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
 }
 
 .AdminLayout-content {
@@ -191,17 +99,9 @@ async function logout() {
   margin-bottom: 0;
 }
 
-.right {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.welcome {
-  color: #475467;
-}
-
-.left {
-  min-width: 1px;
+@media (max-width: 960px) {
+  .AdminLayout-content {
+    padding: 18px;
+  }
 }
 </style>
