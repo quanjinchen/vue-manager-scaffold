@@ -2,7 +2,7 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { STORAGE_KEYS } from '@vue-scaffold/constants';
 import { persistedStorage, removeStorage, writeStorage } from '@vue-scaffold/utils';
-import { requests } from '@/api/requests';
+import { $apis } from '@/api/requests';
 import { useMenuStore } from '@/stores/menu';
 
 // 当前登录用户的基础信息。
@@ -69,7 +69,7 @@ export const useAuthStore = defineStore(
     // 优先通知后端注销当前 token；即使后端请求失败，也要兜底清理前端本地登录态。
     async function logout() {
       try {
-        await requests.login.logout({}, { alertError: false });
+        await $apis.login.logout({}, { alertError: false });
       } finally {
         clearAccess();
       }

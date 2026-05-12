@@ -1,292 +1,280 @@
 <template>
-  <section class="Organization">
-    <header class="toolbar surface-card">
+  <main class="Organization-root">
+    <AppTableList>
       <AppListHeader>
-        <div class="header-search">
-          <div>
-            <h2>组织管理</h2>
-            <p>支持组织树浏览、创建与编辑维护。</p>
-          </div>
-        </div>
-        <div class="header-handle">
-          <AppButton :button-props="{ loading }" @click="loadData()">刷新</AppButton>
-          <AppButton :button-props="{ type: 'primary' }" v-permission="'system:org:update'" @click="openCreate()">新增组织</AppButton>
-        </div>
+        <el-row :gutter="16" style="width: 100%">
+          <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
+            <AppInput
+              v-model="searchParams.orgName"
+              placeholder="组织名称"
+              :icon-props="{ place: 'suffix', name: 'Search' }"
+              @input="dataInfo.debounceSearch()"
+            />
+          </el-col>
+          <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
+            <AppInput
+              v-model="searchParams.shortName"
+              placeholder="组织简称"
+              :icon-props="{ place: 'suffix', name: 'Search' }"
+              @input="dataInfo.debounceSearch()"
+            />
+          </el-col>
+          <el-col :xs="24" :sm="24" :md="12" :lg="14" :xl="16">
+            <div class="header-handle">
+              <AppButton :button-props="{ loading }" @click="dataInfo.refreshPageData()">
+                刷新
+              </AppButton>
+              <AppButton
+                :button-props="{ type: 'primary' }"
+                v-permission="'system:org:update'"
+                @click="dataInfo.openCreate()"
+              >
+                新增组织
+              </AppButton>
+            </div>
+          </el-col>
+        </el-row>
       </AppListHeader>
-    </header>
 
-    <section class="content">
-      <div class="tree-panel surface-card">
-        <h3>组织树</h3>
-        <el-tree
-          :data="organizations"
-          node-key="id"
-          default-expand-all
-          :props="{ label: 'orgName', children: 'children' }"
-          @node-click="handleNodeClick"
-        />
-      </div>
-
-      <div class="table-panel surface-card">
-        <AppTable :table-props="{ data: flatOrganizations }" :table-info="tableInfo" :loading="loading" @handle-click="handleAction" />
-      </div>
-    </section>
+      <AppTable
+        :table-props="{
+          data: filteredOrganizations,
+          rowKey: 'id',
+          treeProps: { children: 'children' },
+          defaultExpandAll: true
+        }"
+        :table-info="tableInfo"
+        :loading="loading"
+        @handle-click="dataInfo.handleAction"
+      />
+    </AppTableList>
 
     <OrganizationFormDialog
-      v-model="dialogVisible"
-      :record="selectedRecord"
+      v-model="dataInfo.dialogVisible"
+      :select-item="dataInfo.selectedRecord"
       :organizations="organizations"
-      @submit="handleSubmit"
+      @success="dataInfo.getList()"
     />
+
     <GrantOrgUsersDialog
-      v-model="grantDialogVisible"
-      :organization="selectedGrantOrg"
+      v-model="dataInfo.grantDialogVisible"
+      :organization="dataInfo.selectedGrantOrg"
       :users="userOptions"
       :checked-user-ids="checkedUserIds"
-      @submit="handleGrantUsers"
+      @success="dataInfo.handleGrantSuccess"
     />
-  </section>
+  </main>
 </template>
 
 <script setup lang="ts" name="Organization">
-  import { computed, onMounted, ref } from 'vue';
-  import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
-  import OrganizationFormDialog from '@/views/organization/components/OrganizationFormDialog.vue';
-  import GrantOrgUsersDialog, { type GrantUserOption } from '@/views/organization/components/GrantOrgUsersDialog.vue';
-  import { requests } from '@/api/requests';
-  import type { OrganizationRecord } from '@/types/domain';
+import { computed, reactive, toRefs } from 'vue';
+import { debounce, messageAlert, messageConfirm } from '@vue-scaffold/utils';
+import OrganizationFormDialog from '@/views/organization/components/OrganizationFormDialog.vue';
+import GrantOrgUsersDialog, { type GrantUserOption } from '@/views/organization/components/GrantOrgUsersDialog.vue';
+import tableInfo from '@/views/organization/tables/Organization';
+import { $apis } from '@/api/requests';
+import type { OrganizationRecord } from '@/types/domain';
 
-  type OrgTreeItem = {
-    id: number | string;
-    parentId?: number | string | null;
-    orgCode?: string;
-    name?: string;
-    leaderName?: string;
-    sortOrder?: number;
-    children?: OrgTreeItem[];
-  };
+type OrgTreeItem = {
+  id: number | string;
+  parentId?: number | string | null;
+  orgCode?: string;
+  name?: string;
+  leaderName?: string;
+  sortOrder?: number;
+  children?: OrgTreeItem[];
+};
 
-  type UserPageItem = {
-    id: number | string;
-    username?: string;
-    nickname?: string;
-  };
+type UserPageItem = {
+  id: number | string;
+  username?: string;
+  nickname?: string;
+};
 
-  type OrgUserInfo = {
-    userId?: number;
-  };
+type OrgUserInfo = {
+  userId?: number;
+};
 
-  const organizations = ref<OrganizationRecord[]>([]);
-  const selectedRecord = ref<OrganizationRecord | null>(null);
-  const selectedGrantOrg = ref<OrganizationRecord | null>(null);
-  const dialogVisible = ref(false);
-  const grantDialogVisible = ref(false);
-  const loading = ref(false);
-  const actionLoading = ref(false);
-  const userOptions = ref<GrantUserOption[]>([]);
-  const checkedUserIds = ref<number[]>([]);
-
-  const flatOrganizations = computed(() => {
-    const walk = (items: OrganizationRecord[]): OrganizationRecord[] =>
-      items.flatMap(item => [item, ...walk(item.children ?? [])]);
-    return walk(organizations.value);
-  });
-
-  const tableInfo = {
-    columns: [
-      { key: 'name', prop: 'orgName', label: '组织名称', minWidth: 180 },
-      { key: 'shortName', prop: 'shortName', label: '组织简称', minWidth: 120 },
-      { key: 'orderNum', prop: 'orderNum', label: '排序', minWidth: 80 },
-      { key: 'remark', prop: 'remark', label: '备注', minWidth: 180 },
-      {
-        key: 'actions',
-        label: '操作',
-        genre: '$action',
-        width: 280,
-        actions: [
-          { key: 'grantUsers', label: '分配用户', permissions: 'system:org:update' },
-          { key: 'edit', label: '编辑', permissions: 'system:org:update' },
-          { key: 'delete', label: '删除', permissions: 'system:org:delete', type: 'danger' }
-        ]
-      }
-    ]
-  };
-
-  function mapOrganization(item: OrgTreeItem): OrganizationRecord {
-    return {
-      id: String(item.id),
-      parentId: item.parentId === null || item.parentId === undefined ? null : String(item.parentId),
-      orgName: item.name ?? '',
-      shortName: item.orgCode ?? '',
-      orderNum: Number(item.sortOrder ?? 1),
-      remark: item.leaderName ?? '',
-      children: Array.isArray(item.children) ? item.children.map(mapOrganization) : []
-    };
-  }
-
-  function mapUserOption(item: UserPageItem): GrantUserOption {
-    return {
-      id: String(item.id),
-      name: item.nickname || item.username || ''
-    };
-  }
-
-  async function loadData() {
-    loading.value = true;
+const dataInfo = reactive({
+  organizations: [] as OrganizationRecord[],
+  searchParams: {
+    orgName: '',
+    shortName: '',
+  },
+  dialogVisible: false,
+  grantDialogVisible: false,
+  selectedRecord: null as OrganizationRecord | null,
+  selectedGrantOrg: null as OrganizationRecord | null,
+  userOptions: [] as GrantUserOption[],
+  checkedUserIds: [] as number[],
+  loading: false,
+  actionLoading: false,
+  async getList() {
+    this.loading = true;
     try {
-      const result = await requests.organizations.tree({});
-      organizations.value = Array.isArray(result) ? result.map((item: OrgTreeItem) => mapOrganization(item)) : [];
+      const result = await $apis.organizations.tree({});
+      this.organizations = Array.isArray(result)
+        ? result.map((item: OrgTreeItem) => mapOrganization(item))
+        : [];
     } finally {
-      loading.value = false;
+      this.loading = false;
     }
-  }
-
-  function handleNodeClick(node: OrganizationRecord) {
-    selectedRecord.value = node;
-  }
-
-  function openCreate(parent?: OrganizationRecord | null) {
-    selectedRecord.value = parent
-      ? {
-          parentId: parent.id,
-          orgName: '',
-          shortName: '',
-          orderNum: 1,
-          remark: '',
-          id: '',
-          children: []
-        }
-      : null;
-    dialogVisible.value = true;
-  }
-
-  async function handleSubmit(payload: Omit<OrganizationRecord, 'id' | 'children'>, id?: string) {
-    const requestBody = {
-      id: id ? Number(id) : undefined,
-      parentId: payload.parentId ? Number(payload.parentId) : 0,
-      orgCode: payload.shortName ?? '',
-      name: payload.orgName,
-      leaderName: payload.remark ?? '',
-      sortOrder: payload.orderNum,
-      status: 1
-    };
-    if (id) {
-      await requests.organizations.update(requestBody);
-      messageAlert({ message: '组织更新成功' });
-    } else {
-      await requests.organizations.save(requestBody);
-      messageAlert({ message: '组织创建成功' });
+  },
+  async refreshPageData() {
+    this.loading = true;
+    try {
+      await this.getList();
+    } finally {
+      this.loading = false;
     }
-    await loadData();
-  }
-
-  async function openGrantUsers(row: OrganizationRecord) {
-    actionLoading.value = true;
+  },
+  search() {
+    return;
+  },
+  debounceSearch: debounce(function (this: any) {
+    this.search();
+  }, 300),
+  openCreate() {
+    this.selectedRecord = null;
+    this.dialogVisible = true;
+  },
+  openEdit(row: OrganizationRecord) {
+    this.selectedRecord = row;
+    this.dialogVisible = true;
+  },
+  async openGrantUsers(row: OrganizationRecord) {
+    this.actionLoading = true;
     try {
       const [userResult, orgUserResult] = await Promise.all([
-        requests.users.list({
+        $apis.users.list({
           pageNum: 1,
           pageSize: 100,
-          keyword: ''
+          keyword: '',
         }),
-        requests.orgUsers.list({
-          orgId: Number(row.id)
-        })
+        $apis.orgUsers.list({
+          orgId: Number(row.id),
+        }),
       ]);
-      userOptions.value = Array.isArray(userResult?.records) ? userResult.records.map((item: UserPageItem) => mapUserOption(item)) : [];
-      checkedUserIds.value = Array.isArray(orgUserResult)
-        ? orgUserResult.map((item: OrgUserInfo) => Number(item.userId)).filter(item => !Number.isNaN(item))
+      this.userOptions = Array.isArray(userResult?.records)
+        ? userResult.records.map((item: UserPageItem) => mapUserOption(item))
         : [];
-      selectedGrantOrg.value = row;
-      grantDialogVisible.value = true;
+      this.checkedUserIds = Array.isArray(orgUserResult)
+        ? orgUserResult
+            .map((item: OrgUserInfo) => Number(item.userId))
+            .filter(item => !Number.isNaN(item))
+        : [];
+      this.selectedGrantOrg = row;
+      this.grantDialogVisible = true;
     } finally {
-      actionLoading.value = false;
+      this.actionLoading = false;
     }
+  },
+  handleGrantSuccess() {
+    this.grantDialogVisible = false;
+  },
+  async deleteOrganization(row: OrganizationRecord) {
+    if (this.actionLoading) {
+      return;
+    }
+
+    this.actionLoading = true;
+    try {
+      await messageConfirm(`确认删除组织“${row.orgName}”吗？`);
+      await $apis.organizations.delete({
+        orgId: Number(row.id),
+      });
+      messageAlert({ message: '组织删除成功' });
+      await this.getList();
+    } finally {
+      this.actionLoading = false;
+    }
+  },
+  async handleAction(row: OrganizationRecord, action: Record<string, any>) {
+    if (this.actionLoading) {
+      return;
+    }
+
+    const actionMap: Record<string, () => void | Promise<void>> = {
+      grantUsers: () => this.openGrantUsers(row),
+      edit: () => this.openEdit(row),
+      delete: () => this.deleteOrganization(row),
+    };
+
+    await actionMap[action.key]?.();
+  },
+  async init() {
+    await this.getList();
+  },
+});
+
+const filteredOrganizations = computed(() => {
+  const orgNameKeyword = dataInfo.searchParams.orgName.trim().toLowerCase();
+  const shortNameKeyword = dataInfo.searchParams.shortName.trim().toLowerCase();
+
+  if (!orgNameKeyword && !shortNameKeyword) {
+    return dataInfo.organizations;
   }
 
-  async function handleGrantUsers(userIds: number[]) {
-    if (!selectedGrantOrg.value) {
-      return;
-    }
-    await requests.orgUsers.grant({
-      orgId: Number(selectedGrantOrg.value.id),
-      userIds
-    });
-    messageAlert({ message: '组织用户分配成功' });
-  }
+  return filterOrganizationTree(dataInfo.organizations, item => {
+    const orgName = item.orgName.toLowerCase();
+    const shortName = (item.shortName ?? '').toLowerCase();
+    const matchOrgName = !orgNameKeyword || orgName.includes(orgNameKeyword);
+    const matchShortName = !shortNameKeyword || shortName.includes(shortNameKeyword);
+    return matchOrgName && matchShortName;
+  });
+});
 
-  async function handleAction(row: OrganizationRecord, action: Record<string, any>) {
-    if (actionLoading.value) {
-      return;
-    }
-    if (action.key === 'grantUsers') {
-      await openGrantUsers(row);
-      return;
-    }
-    if (action.key === 'edit') {
-      selectedRecord.value = row;
-      dialogVisible.value = true;
-      return;
-    }
-    if (action.key === 'delete') {
-      actionLoading.value = true;
-      try {
-        await messageConfirm(`确认删除组织“${row.orgName}”吗？`);
-        await requests.organizations.delete({
-          orgId: Number(row.id)
-        });
-        messageAlert({ message: '组织删除成功' });
-        await loadData();
-      } finally {
-        actionLoading.value = false;
-      }
-    }
-  }
+function mapOrganization(item: OrgTreeItem): OrganizationRecord {
+  return {
+    id: String(item.id),
+    parentId:
+      item.parentId === null || item.parentId === undefined
+        ? null
+        : String(item.parentId),
+    orgName: item.name ?? '',
+    shortName: item.orgCode ?? '',
+    orderNum: Number(item.sortOrder ?? 1),
+    remark: item.leaderName ?? '',
+    children: Array.isArray(item.children) ? item.children.map(mapOrganization) : [],
+  };
+}
 
-  onMounted(loadData);
+function mapUserOption(item: UserPageItem): GrantUserOption {
+  return {
+    id: String(item.id),
+    name: item.nickname || item.username || '',
+  };
+}
+
+function filterOrganizationTree(
+  items: OrganizationRecord[],
+  matcher: (item: OrganizationRecord) => boolean,
+): OrganizationRecord[] {
+  return items.reduce<OrganizationRecord[]>((result, item) => {
+    const nextChildren = filterOrganizationTree(item.children ?? [], matcher);
+    if (matcher(item) || nextChildren.length) {
+      result.push({
+        ...item,
+        children: nextChildren,
+      });
+    }
+    return result;
+  }, []);
+}
+
+const { organizations, searchParams, userOptions, checkedUserIds, loading } = toRefs(dataInfo);
+
+dataInfo.init();
 </script>
 
 <style scoped lang="scss">
-  .Organization {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
+.Organization-root {
+  height: 100%;
+}
 
-  .toolbar {
-    padding: 20px 24px;
-    display: flex;
-    align-items: start;
-    justify-content: space-between;
-    gap: 16px;
-  }
-
-  .toolbar p {
-    margin: 8px 0 0;
-    color: #667085;
-  }
-
-  .toolbar :deep(.AppListHeader-root) {
-    width: 100%;
-  }
-
-  .content {
-    display: flex;
-    gap: 20px;
-  }
-
-  .tree-panel {
-    flex: 0 0 320px;
-    padding: 20px;
-  }
-
-  .table-panel {
-    flex: 1;
-    min-width: 0;
-    padding: 20px;
-  }
-
-  h3 {
-    margin: 0 0 16px;
-  }
+.header-handle {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
 </style>

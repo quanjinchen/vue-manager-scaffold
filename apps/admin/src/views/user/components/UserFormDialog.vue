@@ -6,6 +6,7 @@
   >
     <el-form
       ref="formRef"
+      v-loading="loading"
       :model="formData"
       :rules="dataInfo.rules"
       label-position="top"
@@ -51,7 +52,7 @@
           <el-form-item label="状态" prop="status">
             <AppSelect
               v-model="formData.status"
-              :list="dataInfo.statusOptions"
+              :list="dictStore.userStatusList"
               :select-props="{ placeholder: '请选择状态' }"
             />
           </el-form-item>
@@ -74,8 +75,9 @@
 import { computed, reactive, ref, watch, toRefs } from "vue";
 import type { FormInstance } from "element-plus";
 import { messageAlert, useVModel } from "@vue-scaffold/utils";
-import { requests } from "@/api/requests";
+import { $apis } from "@/api/requests";
 import type { UserRecord } from "@/types/domain";
+import { dictStore } from "@vue-scaffold/constants";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -120,7 +122,7 @@ const dataInfo: any = reactive({
     fullName: "",
     phone: "",
     email: "",
-    status: "active",
+    status: "",
     remark: "",
   },
   // 表单验证规则
@@ -131,29 +133,31 @@ const dataInfo: any = reactive({
     email: [{ required: true, message: "请输入邮箱", trigger: "blur" }],
   },
   submitLoading: false,
+  loading: false,
   // 是否编辑模式
   get isEdit() {
     return Boolean(props.selectItem?.id);
   },
-
-  // 状态选项
-  statusOptions: [
-    { id: "active", name: "启用" },
-    { id: "disabled", name: "停用" },
-  ],
-
   // 初始化表单
   initForm() {
-    if (!formRef.value) return;
-    setTimeout(() => {
-      formRef.value?.resetFields();
-    }, 500);
+    formRef.value?.resetFields();
+    formRef.value?.clearValidate();
   },
-  getDetail() {
-    if (props.selectItem?.id) {
+  async getDetail() {
+    if (!props.selectItem?.id) {
+      return;
+    }
+
+    this.loading = true;
+    try {
+      const detail = await $apis.users.detail({
+        id: Number(props.selectItem.id),
+      });
       this.formData = {
-        ...props.selectItem,
+        ...detail,
       };
+    } finally {
+      this.loading = false;
     }
   },
   get params() {
@@ -162,9 +166,12 @@ const dataInfo: any = reactive({
   // 提交表单
   async handleSubmit() {
     await formRef.value?.validate();
+    if (this.submitLoading) return;
     this.submitLoading = true;
     try {
-      await requests.users[this.isEdit ? "update" : "create"](this.params);
+      await $apis.users[this.isEdit ? "update" : "create"]({
+        ...this.params,
+      });
       messageAlert({ message: `操作成功` });
       visible.value = false;
       emit("success");
@@ -174,7 +181,7 @@ const dataInfo: any = reactive({
   },
 });
 
-const { submitLoading, formData } = toRefs(dataInfo);
+const { submitLoading, loading, formData } = toRefs(dataInfo);
 
 // 暴露
 defineExpose({ dataInfo });

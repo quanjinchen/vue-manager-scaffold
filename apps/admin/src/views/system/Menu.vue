@@ -1,220 +1,271 @@
 <template>
-  <section class="Menu">
-    <header class="toolbar surface-card">
+  <main class="Menu-root">
+    <AppTableList>
       <AppListHeader>
-        <div class="header-search">
-          <div>
-            <h2>菜单管理</h2>
-            <p>支持平台菜单树的维护、层级调整与权限编码管理。</p>
-          </div>
-        </div>
-        <div class="header-handle">
-          <AppButton :button-props="{ loading }" @click="loadData()">刷新</AppButton>
-          <AppButton :button-props="{ type: 'primary' }" v-permission="'system:menu:update'" @click="openCreate()">新增菜单</AppButton>
-        </div>
+        <el-row :gutter="16" style="width: 100%">
+          <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
+            <AppInput
+              v-model="searchParams.menuName"
+              placeholder="菜单名称"
+              :icon-props="{ place: 'suffix', name: 'Search' }"
+              @input="dataInfo.debounceSearch()"
+            />
+          </el-col>
+          <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
+            <AppInput
+              v-model="searchParams.path"
+              placeholder="路由路径"
+              :icon-props="{ place: 'suffix', name: 'Search' }"
+              @input="dataInfo.debounceSearch()"
+            />
+          </el-col>
+          <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
+            <AppInput
+              v-model="searchParams.menuCode"
+              placeholder="权限编码"
+              :icon-props="{ place: 'suffix', name: 'Search' }"
+              @input="dataInfo.debounceSearch()"
+            />
+          </el-col>
+          <el-col :xs="24" :sm="24" :md="6" :lg="9" :xl="12">
+            <div class="header-handle">
+              <AppButton :button-props="{ loading }" @click="dataInfo.refreshPageData()">
+                刷新
+              </AppButton>
+              <AppButton
+                :button-props="{ type: 'primary' }"
+                v-permission="'system:menu:update'"
+                @click="dataInfo.openCreate()"
+              >
+                新增菜单
+              </AppButton>
+            </div>
+          </el-col>
+        </el-row>
       </AppListHeader>
-    </header>
 
-    <section class="content surface-card">
       <AppTable
         :table-props="{
-          data: rows,
+          data: filteredMenus,
           rowKey: 'id',
           treeProps: { children: 'children' },
           defaultExpandAll: true
         }"
         :table-info="tableInfo"
         :loading="loading"
-        @handle-click="handleAction"
+        @handle-click="dataInfo.handleAction"
       />
-    </section>
+    </AppTableList>
 
     <MenuFormDialog
-      v-model="dialogVisible"
-      :record="selectedRecord"
-      :menus="rows"
-      @submit="handleSubmit"
+      v-model="dataInfo.dialogVisible"
+      :select-item="dataInfo.selectedRecord"
+      :menus="list"
+      @success="dataInfo.getList()"
     />
-  </section>
+  </main>
 </template>
 
 <script setup lang="ts" name="Menu">
-  import { ref } from 'vue';
-  import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
-  import MenuFormDialog from '@/views/system/components/MenuFormDialog.vue';
-  import { requests } from '@/api/requests';
-  import type { MenuRecord } from '@/types/domain';
+import { computed, reactive, toRefs } from 'vue';
+import { debounce, messageAlert, messageConfirm } from '@vue-scaffold/utils';
+import MenuFormDialog from '@/views/system/components/MenuFormDialog.vue';
+import tableInfo from '@/views/system/tables/Menu';
+import { $apis } from '@/api/requests';
+import type { MenuRecord } from '@/types/domain';
 
-  type MenuTreeItem = {
-    id: number | string;
-    parentId?: number | string | null;
-    menuType?: string;
-    name?: string;
-    path?: string;
-    permissionCode?: string;
-    sortOrder?: number;
-    visible?: number | boolean;
-    remark?: string;
-    children?: MenuTreeItem[];
-  };
+type MenuTreeItem = {
+  id: number | string;
+  parentId?: number | string | null;
+  menuType?: string;
+  name?: string;
+  path?: string;
+  permissionCode?: string;
+  sortOrder?: number;
+  visible?: number | boolean;
+  remark?: string;
+  children?: MenuTreeItem[];
+};
 
-  const rows = ref<MenuRecord[]>([]);
-  const selectedRecord = ref<MenuRecord | null>(null);
-  const dialogVisible = ref(false);
-  const loading = ref(false);
-  const actionLoading = ref(false);
-
-  const tableInfo = {
-    columns: [
-      { key: 'menuName', prop: 'menuName', label: '菜单名称', minWidth: 180 },
-      { key: 'path', prop: 'path', label: '路由路径', minWidth: 220 },
-      { key: 'menuCode', prop: 'menuCode', label: '权限编码', minWidth: 220 },
-      { key: 'orderNum', prop: 'orderNum', label: '排序', width: 100 },
-      {
-        key: 'menuType',
-        prop: 'menuType',
-        label: '类型',
-        width: 100,
-        tagText: (row: MenuRecord) => ({ M: '目录', C: '菜单', B: '按钮' }[row.menuType] || '菜单')
-      },
-      {
-        key: 'actions',
-        label: '操作',
-        genre: '$action',
-        width: 280,
-        actions: [
-          { key: 'create', label: '新增下级', permissions: 'system:menu:update' },
-          { key: 'edit', label: '编辑', permissions: 'system:menu:update' },
-          { key: 'delete', label: '删除', permissions: 'system:menu:delete', type: 'danger' }
-        ]
-      }
-    ]
-  };
-
-  function mapMenuType(menuType?: string | number): 'M' | 'C' | 'B' {
-    const typeStr = String(menuType ?? '').toUpperCase();
-    if (typeStr === 'M' || typeStr === 'C' || typeStr === 'B') {
-      return typeStr as 'M' | 'C' | 'B';
-    }
-    // 兼容旧的数字格式
-    switch (Number(menuType)) {
-      case 1:
-        return 'M';
-      case 2:
-      case 3:
-        return 'C';
-      case 4:
-        return 'B';
-      default:
-        return 'C';
-    }
-  }
-
-  function mapMenu(item: MenuTreeItem): MenuRecord {
-    return {
-      id: String(item.id),
-      parentId: item.parentId === null || item.parentId === undefined ? null : String(item.parentId),
-      menuType: mapMenuType(item.menuType),
-      menuName: item.name ?? '',
-      path: item.path ?? '',
-      menuCode: item.permissionCode ?? '',
-      orderNum: Number(item.sortOrder ?? 1),
-      enabled: item.visible !== false && Number(item.visible ?? 1) !== 0,
-      children: Array.isArray(item.children) ? item.children.map(mapMenu) : []
-    };
-  }
-
-  async function loadData() {
-    loading.value = true;
+const dataInfo = reactive({
+  list: [] as MenuRecord[],
+  searchParams: {
+    menuName: '',
+    path: '',
+    menuCode: '',
+  },
+  dialogVisible: false,
+  selectedRecord: null as MenuRecord | null,
+  loading: false,
+  actionLoading: false,
+  async getList() {
+    this.loading = true;
     try {
-      const result = await requests.menus.tree({});
-      rows.value = Array.isArray(result) ? result.map((item: MenuTreeItem) => mapMenu(item)) : [];
+      const result = await $apis.menus.tree({});
+      this.list = Array.isArray(result)
+        ? result.map((item: MenuTreeItem) => mapMenu(item))
+        : [];
     } finally {
-      loading.value = false;
+      this.loading = false;
     }
-  }
-
-  function openCreate(parent?: MenuRecord | null) {
-    selectedRecord.value = parent
-      ? {
-          id: '',
-          parentId: parent.id,
-          menuType: 'C',
-          menuName: '',
-          path: '',
-          menuCode: '',
-          orderNum: 1,
-          enabled: true,
-          children: []
-        }
-      : null;
-    dialogVisible.value = true;
-  }
-
-  async function handleSubmit(payload: Omit<MenuRecord, 'id' | 'children'>, id?: string) {
-    const requestBody = {
-      id: id ? Number(id) : undefined,
-      parentId: payload.parentId ? Number(payload.parentId) : 0,
-      menuType: payload.menuType,
-      name: payload.menuName,
-      path: payload.path,
-      permissionCode: payload.menuCode,
-      sortOrder: payload.orderNum,
-      visible: payload.enabled
+  },
+  async refreshPageData() {
+    this.loading = true;
+    try {
+      await this.getList();
+    } finally {
+      this.loading = false;
+    }
+  },
+  search() {
+    return;
+  },
+  debounceSearch: debounce(function (this: any) {
+    this.search();
+  }, 300),
+  openCreate() {
+    this.selectedRecord = null;
+    this.dialogVisible = true;
+  },
+  openCreateChild(row: MenuRecord) {
+    this.selectedRecord = {
+      id: '',
+      parentId: row.id,
+      menuType: 'C',
+      menuName: '',
+      path: '',
+      menuCode: '',
+      orderNum: 1,
+      enabled: true,
+      children: [],
     };
-    if (id) {
-      await requests.menus.update(requestBody);
-    } else {
-      await requests.menus.save(requestBody);
-      messageAlert({ message: '菜单创建成功' });
+    this.dialogVisible = true;
+  },
+  openEdit(row: MenuRecord) {
+    this.selectedRecord = row;
+    this.dialogVisible = true;
+  },
+  async deleteMenu(row: MenuRecord) {
+    if (this.actionLoading) {
+      return;
     }
-    await loadData();
+
+    this.actionLoading = true;
+    try {
+      await messageConfirm(`确认删除菜单“${row.menuName}”吗？`);
+      await $apis.menus.delete({
+        menuId: Number(row.id),
+      });
+      messageAlert({ message: '菜单删除成功' });
+      await this.getList();
+    } finally {
+      this.actionLoading = false;
+    }
+  },
+  async handleAction(row: MenuRecord, action: Record<string, any>) {
+    if (this.actionLoading) {
+      return;
+    }
+
+    const actionMap: Record<string, () => void | Promise<void>> = {
+      create: () => this.openCreateChild(row),
+      edit: () => this.openEdit(row),
+      delete: () => this.deleteMenu(row),
+    };
+
+    await actionMap[action.key]?.();
+  },
+  async init() {
+    await this.getList();
+  },
+});
+
+const filteredMenus = computed(() => {
+  const menuNameKeyword = dataInfo.searchParams.menuName.trim().toLowerCase();
+  const pathKeyword = dataInfo.searchParams.path.trim().toLowerCase();
+  const menuCodeKeyword = dataInfo.searchParams.menuCode.trim().toLowerCase();
+
+  if (!menuNameKeyword && !pathKeyword && !menuCodeKeyword) {
+    return dataInfo.list;
   }
 
-  async function handleAction(row: MenuRecord, action: Record<string, any>) {
-    if (actionLoading.value) {
-      return;
-    }
-    if (action.key === 'create') {
-      openCreate(row);
-      return;
-    }
-    if (action.key === 'edit') {
-      selectedRecord.value = row;
-      dialogVisible.value = true;
-      return;
-    }
-    if (action.key === 'delete') {
-      actionLoading.value = true;
-      try {
-        await messageConfirm(`确认删除菜单“${row.menuName}”吗？`);
-        await requests.menus.delete({
-          menuId: Number(row.id)
-        });
-        messageAlert({ message: '菜单删除成功' });
-        await loadData();
-      } finally {
-        actionLoading.value = false;
-      }
-    }
+  return filterMenuTree(dataInfo.list, item => {
+    const menuName = item.menuName.toLowerCase();
+    const path = item.path.toLowerCase();
+    const menuCode = item.menuCode.toLowerCase();
+    const matchMenuName = !menuNameKeyword || menuName.includes(menuNameKeyword);
+    const matchPath = !pathKeyword || path.includes(pathKeyword);
+    const matchMenuCode = !menuCodeKeyword || menuCode.includes(menuCodeKeyword);
+    return matchMenuName && matchPath && matchMenuCode;
+  });
+});
+
+function mapMenuType(menuType?: string | number): 'M' | 'C' | 'B' {
+  const typeStr = String(menuType ?? '').toUpperCase();
+  if (typeStr === 'M' || typeStr === 'C' || typeStr === 'B') {
+    return typeStr as 'M' | 'C' | 'B';
   }
 
-  loadData();
+  switch (Number(menuType)) {
+    case 1:
+      return 'M';
+    case 2:
+    case 3:
+      return 'C';
+    case 4:
+      return 'B';
+    default:
+      return 'C';
+  }
+}
+
+function mapMenu(item: MenuTreeItem): MenuRecord {
+  return {
+    id: String(item.id),
+    parentId:
+      item.parentId === null || item.parentId === undefined
+        ? null
+        : String(item.parentId),
+    menuType: mapMenuType(item.menuType),
+    menuName: item.name ?? '',
+    path: item.path ?? '',
+    menuCode: item.permissionCode ?? '',
+    orderNum: Number(item.sortOrder ?? 1),
+    enabled: item.visible !== false && Number(item.visible ?? 1) !== 0,
+    children: Array.isArray(item.children) ? item.children.map(mapMenu) : [],
+  };
+}
+
+function filterMenuTree(
+  items: MenuRecord[],
+  matcher: (item: MenuRecord) => boolean,
+): MenuRecord[] {
+  return items.reduce<MenuRecord[]>((result, item) => {
+    const nextChildren = filterMenuTree(item.children ?? [], matcher);
+    if (matcher(item) || nextChildren.length) {
+      result.push({
+        ...item,
+        children: nextChildren,
+      });
+    }
+    return result;
+  }, []);
+}
+
+const { list, searchParams, loading } = toRefs(dataInfo);
+
+dataInfo.init();
 </script>
 
 <style scoped lang="scss">
-  .Menu {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
+.Menu-root {
+  height: 100%;
+  padding-bottom: 20px;
+}
 
-  .toolbar,
-  .content {
-    padding: 20px 24px;
-  }
-
-  .toolbar :deep(.AppListHeader-root) {
-    width: 100%;
-  }
+.header-handle {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
 </style>

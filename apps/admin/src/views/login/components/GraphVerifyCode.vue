@@ -9,7 +9,7 @@
 
 <script setup lang="ts" name="GraphVerifyCode">
   import { reactive } from 'vue';
-import { requests } from '@/api/requests';
+import { $apis } from '@/api/requests';
 
   type CaptchaDetail = {
     img?: string;
@@ -22,7 +22,7 @@ import { requests } from '@/api/requests';
     detail: {} as CaptchaDetail,
     async init() {
       this.verifyCode = '';
-      const data = await requests.login.getCaptcha({}, {
+      const data = await $apis.login.getCaptcha({}, {
         alertError: false,
         needLogin: false
       });

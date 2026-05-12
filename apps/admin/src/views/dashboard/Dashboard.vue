@@ -62,7 +62,7 @@
   import { computed, onMounted, reactive, ref } from 'vue';
   import dayjs from 'dayjs';
   import type { AccessMenuItem } from '@vue-scaffold/types';
-  import { requests } from '@/api/requests';
+  import { $apis } from '@/api/requests';
   import { useMenuStore } from '@/stores';
   import BaseStatsCard from '@/views/dashboard/components/BaseStatsCard.vue';
   import TrendChartCard from '@/views/dashboard/components/TrendChartCard.vue';
@@ -375,7 +375,7 @@
   }
 
   async function listUsers() {
-    const result = await requests.users.list(
+    const result = await $apis.users.list(
       {
         pageNum: 1,
         pageSize: 1000,
@@ -396,7 +396,7 @@
     const pageSize = 200;
 
     for (let pageNum = 1; pageNum <= 5; pageNum += 1) {
-      const result = await requests.operationLogs.page(
+      const result = await $apis.operationLogs.page(
         {
           pageNum,
           pageSize
@@ -490,7 +490,7 @@
 
   async function init() {
     try {
-      const summary = await requests.dashboard.summary({}, { alertError: false });
+      const summary = await $apis.dashboard.summary({}, { alertError: false });
       if (
         summary &&
         typeof summary === 'object' &&

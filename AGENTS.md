@@ -18,7 +18,7 @@
 分层职责约定
 
 1. `views` 负责页面展示、交互组织和页面级状态编排，不直接承载通用请求逻辑。
-2. 默认不新增 `services` 层；简单 CRUD 和单页面请求直接在页面中调用 `requests` 即可。
+2. 默认不新增 `services` 层；简单 CRUD 和单页面请求直接在页面中调用 `$apis` 即可。
 3. 只有明显复杂的业务编排、多接口串联、登录流程归一化这类场景，才允许保留或新增 `services`。
 4. `packages/api` 负责通用请求基础设施、请求实例、统一请求头、错误处理和通用请求封装。
 5. `stores` 负责跨页面共享状态、登录态、菜单态、持久化状态，不要把一次性页面状态滥用到 store 中。
@@ -50,5 +50,345 @@
 1. 通用请求头、请求拦截、响应处理、错误提示统一放在 `packages/api`。
 2. 权限判断、存储封装、时间处理、字符串处理、ID 生成等通用方法统一放在 `packages/utils`。
 3. 页面专属的弹窗配置、表格列定义、筛选项、局部类型，可以放在页面目录下。
-4. 如果一个能力已经在 `packages/*` 中存在，就不要在 `apps/admin/src` 里重复造一份。
-5. 新增公共能力前，先检查现有 `packages/*` 是否已有相近实现，优先复用或扩展。
+4. 所有表格的 `tableInfo` 必须拆到独立文件，统一放在当前模块目录下的 `tables/` 中，不允许在页面 `.vue` 文件里内联定义 `const tableInfo = ...`。
+5. 页面使用表格时，统一通过 `import tableInfo from '@/views/<module>/tables/<Name>'` 引入，保持页面只负责状态和交互，不承载列配置细节。
+6. 如果一个能力已经在 `packages/*` 中存在，就不要在 `apps/admin/src` 里重复造一份。
+7. 新增公共能力前，先检查现有 `packages/*` 是否已有相近实现，优先复用或扩展。
+
+CRUD 模块开发规范
+
+1. 新增后台 CRUD 模块时，默认参考 `User` 模块结构实现，不要每个模块各写一套风格。
+2. 每个业务模块固定放在 `apps/admin/src/views/<module>/`，列表页入口文件命名为 `<Module>.vue`。
+3. 模块内弹窗组件统一放在 `components/`，表格列配置统一放在 `tables/`。
+4. 即使模块只有一个表格，也必须建立 `tables/` 目录并把表格配置独立成文件。
+5. 模块对应的接口统一收口到 `apps/admin/src/api/requests.ts` 的 `$apis.<module>` 下，不允许页面里直接写接口 URL。
+6. 页面列表、表单弹窗、表格列配置、业务类型保持清晰分层，页面不要同时承载列表逻辑和表单细节。
+7. 业务实体类型统一定义在 `apps/admin/src/types/domain.ts`，不要长期在页面里使用 `any`。
+
+推荐目录结构
+
+```text
+apps/admin/src/views/user/
+  User.vue
+  components/
+    UserFormDialog.vue
+  tables/
+    User.ts
+```
+
+接口约定
+
+1. 全局请求集合统一命名为 `$apis`。
+2. 接口按业务域分组，例如 `$apis.users`、`$apis.roles`、`$apis.organizations`。
+3. 标准 CRUD 命名统一为 `list`、`detail`、`create`、`update`、`delete`。
+4. 非 CRUD 动作使用明确业务语义命名，例如 `resetPassword`、`grantMenus`、`grant`。
+5. 页面只能通过 `$apis.xxx.xxx()` 发请求，不允许直接调用裸 `axios` 或直接拼接接口路径。
+
+推荐示例
+
+```ts
+export const $apis = {
+  users: {
+    list(params: Record<string, any> = {}) {
+      return appRequest.post('/api/user/list-user', params);
+    },
+    detail(params: Record<string, any> = {}) {
+      return appRequest.get('/api/user/get-user-by-id', params, {
+        appendPathOnGet: true,
+      });
+    },
+    create(params: Record<string, any> = {}) {
+      return appRequest.post('/api/user/create-user', params);
+    },
+    update(params: Record<string, any> = {}) {
+      return appRequest.post('/api/user/update-user', params);
+    },
+    delete(params: Record<string, any> = {}) {
+      return appRequest.post('/api/user/delete-user', params);
+    },
+  }
+};
+```
+
+列表页规范
+
+1. 列表页入口统一为 `views/<module>/<Module>.vue`。
+2. 列表页负责搜索、分页、列表请求、行操作分发、弹窗开关，不负责表单内部实现。
+3. 页面状态统一收口到一个 `dataInfo` 中，至少包含：
+   `pageInfo`、`searchParams`、`list`、`total`、`loading`、`actionLoading`、`dialogVisible`、`selectedRecord`。
+4. 列表请求参数统一通过 `get params()` 组合，避免在多个方法中重复拼接。
+5. 搜索默认走防抖，建议 `300ms`。
+6. 删除、重置、授权等有副作用操作，必须先确认，再请求，再刷新列表。
+7. 表格行操作统一通过 `handleAction` 分发，不要把大量业务逻辑直接塞进表格列定义。
+8. 页面中不要直接声明 `const tableInfo = ...`，表格列配置必须从 `tables/*.ts` 导入。
+
+列表页示例
+
+```vue
+<script setup lang="ts" name="User">
+import { reactive, toRefs } from "vue";
+import { debounce, messageAlert, messageConfirm } from "@vue-scaffold/utils";
+import { $apis } from "@/api/requests";
+import type { UserRecord } from "@/types/domain";
+import UserFormDialog from "@/views/user/components/UserFormDialog.vue";
+import tableInfo from "@/views/user/tables/User";
+
+const dataInfo = reactive({
+  pageInfo: { pageNum: 1, pageSize: 10 },
+  searchParams: {
+    username: "",
+    fullName: "",
+    phone: "",
+    email: "",
+  },
+  dialogVisible: false,
+  selectedRecord: null as UserRecord | null,
+  total: 0,
+  list: [] as UserRecord[],
+  loading: false,
+  actionLoading: false,
+  get params() {
+    return {
+      ...this.searchParams,
+      ...this.pageInfo,
+    };
+  },
+  async getList() {
+    this.loading = true;
+    try {
+      const data = await $apis.users.list(this.params);
+      this.total = data?.total ?? 0;
+      this.list = data?.records ?? [];
+    } finally {
+      this.loading = false;
+    }
+  },
+  search() {
+    this.pageInfo.pageNum = 1;
+    this.getList();
+  },
+  debounceSearch: debounce(function (this: any) {
+    this.search();
+  }, 300),
+  openCreate() {
+    this.selectedRecord = null;
+    this.dialogVisible = true;
+  },
+  openEdit(row: UserRecord) {
+    this.selectedRecord = row;
+    this.dialogVisible = true;
+  },
+  async deleteUser(row: UserRecord) {
+    if (this.actionLoading) return;
+    this.actionLoading = true;
+    try {
+      await messageConfirm(`确认删除用户"${row.fullName || row.userName}"吗？`);
+      await $apis.users.delete({ userId: Number(row.id) });
+      messageAlert({ message: "用户删除成功" });
+      await this.getList();
+    } finally {
+      this.actionLoading = false;
+    }
+  },
+  async handleAction(row: UserRecord, action: Record<string, any>) {
+    const actionMap: Record<string, () => void | Promise<void>> = {
+      edit: () => this.openEdit(row),
+      delete: () => this.deleteUser(row),
+    };
+    await actionMap[action.key]?.();
+  },
+});
+
+const { pageInfo, searchParams, list, total, loading } = toRefs(dataInfo);
+</script>
+```
+
+表单弹窗规范
+
+1. 新增和编辑统一复用一个 `<Module>FormDialog.vue`，不要拆成两个组件。
+2. 组件职责只包含弹窗显示、表单状态、校验、详情回填、提交请求。
+3. 弹窗只通过 `emit("success")` 通知父页面刷新，不在弹窗里直接处理外层列表。
+4. `props` 统一使用：
+   `modelValue: boolean`
+   `selectItem?: XxxRecord | null`
+5. `emits` 统一使用：
+   `"update:modelValue"`
+   `success`
+6. 组件内部统一维护 `formRef`、`visible`、`formData`、`rules`、`loading`、`submitLoading`。
+7. `loading` 表示页面级 loading，用于详情加载和提交时遮罩表单区域。
+8. `submitLoading` 仅用于保存按钮 loading。
+9. 弹窗关闭时必须重置表单值、校验状态和临时状态。
+10. 打开弹窗时，如果是编辑态则请求详情；如果是新增态则直接使用初始表单值。
+11. 提交前必须先执行表单校验，并阻止重复提交。
+12. 提交成功后统一提示成功、关闭弹窗并触发 `success` 事件。
+
+表单弹窗示例
+
+```vue
+<template>
+  <AppDialog
+    v-model="visible"
+    :modal-props="modalProps"
+    :footer-props="footerProps"
+  >
+    <el-form
+      ref="formRef"
+      v-loading="loading"
+      :model="formData"
+      :rules="dataInfo.rules"
+      label-position="top"
+    >
+      <el-row :gutter="16">
+        <el-col :span="12">
+          <el-form-item label="用户名" prop="username">
+            <AppInput v-model="formData.username" v-trim placeholder="请输入用户名" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="姓名" prop="fullName">
+            <AppInput v-model="formData.fullName" v-trim placeholder="请输入姓名" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="24">
+          <el-form-item label="备注" prop="remark">
+            <AppInput
+              v-model="formData.remark"
+              placeholder="请输入备注"
+              :input-props="{ type: 'textarea', rows: 3 }"
+            />
+          </el-form-item>
+        </el-col>
+      </el-row>
+    </el-form>
+  </AppDialog>
+</template>
+
+<script setup lang="ts" name="UserFormDialog">
+import { computed, reactive, ref, toRefs, watch } from "vue";
+import type { FormInstance } from "element-plus";
+import { messageAlert, useVModel } from "@vue-scaffold/utils";
+import { $apis } from "@/api/requests";
+import type { UserRecord } from "@/types/domain";
+
+const props = defineProps<{
+  modelValue: boolean;
+  selectItem?: UserRecord | null;
+}>();
+
+const emit = defineEmits<{
+  "update:modelValue": [boolean];
+  success: [];
+}>();
+
+const formRef = ref<FormInstance>();
+const visible = useVModel(props, emit as any);
+
+const dataInfo = reactive({
+  formData: {
+    username: "",
+    fullName: "",
+    phone: "",
+    email: "",
+    status: "",
+    remark: "",
+  },
+  rules: {
+    username: [{ required: true, message: "请输入用户名", trigger: "blur" }],
+    fullName: [{ required: true, message: "请输入姓名", trigger: "blur" }],
+  },
+  loading: false,
+  submitLoading: false,
+  get isEdit() {
+    return Boolean(props.selectItem?.id);
+  },
+  initForm() {
+    formRef.value?.resetFields();
+    formRef.value?.clearValidate();
+  },
+  async getDetail() {
+    if (!props.selectItem?.id) return;
+
+    this.loading = true;
+    try {
+      const detail = await $apis.users.detail({ id: Number(props.selectItem.id) });
+      this.formData = {
+        ...detail,
+      };
+    } finally {
+      this.loading = false;
+    }
+  },
+  get params() {
+    return { ...this.formData };
+  },
+  async handleSubmit() {
+    await formRef.value?.validate();
+    if (this.submitLoading) return;
+
+    this.submitLoading = true;
+    this.loading = true;
+    try {
+      await $apis.users[this.isEdit ? "update" : "create"]({
+        ...this.params,
+      });
+      messageAlert({ message: "操作成功" });
+      visible.value = false;
+      emit("success");
+    } finally {
+      this.submitLoading = false;
+      this.loading = false;
+    }
+  },
+});
+
+const modalProps = computed(() => ({
+  title: `${dataInfo.isEdit ? "编辑" : "新增"}用户`,
+  width: 720,
+}));
+
+const footerProps = computed(() => ({
+  buttons: [
+    { text: "取消", close: true, buttonProps: {} },
+    {
+      text: dataInfo.submitLoading ? "保存中..." : "保存",
+      close: false,
+      buttonProps: { type: "primary", loading: dataInfo.submitLoading },
+      click: () => dataInfo.handleSubmit(),
+    },
+  ],
+}));
+
+watch(visible, (value) => {
+  if (!value) {
+    dataInfo.initForm();
+    dataInfo.loading = false;
+    dataInfo.submitLoading = false;
+    return;
+  }
+  dataInfo.getDetail();
+});
+
+const { formData, loading } = toRefs(dataInfo);
+</script>
+```
+
+命名约定
+
+1. 列表页组件命名使用业务名，例如 `User`、`Role`、`Organization`。
+2. 表单弹窗组件统一命名为 `<Module>FormDialog`。
+3. 选中行数据统一命名为 `selectedRecord`。
+4. 弹窗开关统一命名为 `dialogVisible`。
+5. 页面级列表 loading 统一命名为 `loading`。
+6. 行操作 loading 统一命名为 `actionLoading`。
+7. 弹窗提交 loading 统一命名为 `submitLoading`。
+8. 获取列表方法统一命名为 `getList`。
+9. 弹窗详情方法统一命名为 `getDetail`。
+10. 提交方法统一命名为 `handleSubmit`。
+
+补充约束
+
+1. 不要在页面和弹窗中混用 `requests`、`api`、`request` 等多个接口入口名称，统一使用 `$apis`。
+2. 不要只给按钮加 loading，不给页面或表单区域加 loading。
+3. 不要在模板中直接写复杂业务判断，尽量收口到 `computed` 或方法中。
+4. 不要把父组件传入的 `selectItem` 直接当作表单对象修改。
+5. 如果前后端字段不一致，统一在表单详情回填或提交前做一次集中映射，不要在页面各处散写兼容逻辑。

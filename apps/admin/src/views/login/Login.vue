@@ -90,7 +90,7 @@
   import { useRoute, useRouter } from 'vue-router';
   import type { AccessMenuItem } from '@vue-scaffold/types';
   import { messageAlert } from '@vue-scaffold/utils';
-  import { requests } from '@/api/requests';
+  import { $apis } from '@/api/requests';
   import { ensureAccessRoutes } from '@/router';
   import { useAuthStore, useMenuStore } from '@/stores';
   import Account from '@/views/login/components/Account.vue';
@@ -185,7 +185,7 @@
   }
 
   async function loginByPassword(params: Record<string, string>) {
-    const loginResult = await requests.login.accountLogin(params, {
+    const loginResult = await $apis.login.accountLogin(params, {
       alertError: false,
       needLogin: false
     });
@@ -195,7 +195,7 @@
       throw new Error('登录响应缺少 token');
     }
 
-    const loginInfo = await requests.login.getLoginInfo({}, {
+    const loginInfo = await $apis.login.getLoginInfo({}, {
       axiosOptions: {
         headers: {
           Authorization: token

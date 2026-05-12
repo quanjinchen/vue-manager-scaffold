@@ -1,23 +1,19 @@
 <template>
   <AppDialog
     v-model="visible"
-    :modal-props="{ title: `${isEdit ? '编辑' : '新增'}菜单`, width: 680 }"
-    :footer-props="{
-      buttons: [
-        { text: '取消', close: true, buttonProps: {} },
-        {
-          text: submitLoading ? '保存中...' : '保存',
-          close: false,
-          buttonProps: { type: 'primary', loading: submitLoading },
-          click: handleSubmit,
-        },
-      ],
-    }"
+    :modal-props="modalProps"
+    :footer-props="footerProps"
   >
-    <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
+    <el-form
+      ref="formRef"
+      v-loading="loading"
+      :model="formData"
+      :rules="dataInfo.rules"
+      label-position="top"
+    >
       <el-form-item label="上级菜单" prop="parentId">
         <el-tree-select
-          v-model="form.parentId"
+          v-model="formData.parentId"
           style="width: 100%"
           :data="menuTree"
           node-key="id"
@@ -33,7 +29,7 @@
         <el-col :span="12">
           <el-form-item label="菜单类型" prop="menuType">
             <AppSelect
-              v-model="form.menuType"
+              v-model="formData.menuType"
               :list="dictStore.menuTypeList"
               :select-props="{ placeholder: '请选择菜单类型' }"
             />
@@ -41,17 +37,13 @@
         </el-col>
         <el-col :span="12">
           <el-form-item label="菜单名称" prop="menuName">
-            <AppInput
-              v-model="form.menuName"
-              v-trim
-              placeholder="请输入菜单名称"
-            />
+            <AppInput v-model="formData.menuName" v-trim placeholder="请输入菜单名称" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="排序" prop="orderNum">
             <AppInputNumber
-              v-model="form.orderNum"
+              v-model="formData.orderNum"
               :input-number-props="{
                 min: 1,
                 max: 9999,
@@ -63,21 +55,17 @@
         </el-col>
         <el-col :span="12">
           <el-form-item label="路径" prop="path">
-            <AppInput v-model="form.path" v-trim placeholder="请输入路径" />
+            <AppInput v-model="formData.path" v-trim placeholder="请输入路径" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="权限编码" prop="menuCode">
-            <AppInput
-              v-model="form.menuCode"
-              v-trim
-              placeholder="请输入权限编码"
-            />
+            <AppInput v-model="formData.menuCode" v-trim placeholder="请输入权限编码" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="是否启用" prop="enabled">
-            <AppSwitch v-model="form.enabled" />
+            <AppSwitch v-model="formData.enabled" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -86,72 +74,174 @@
 </template>
 
 <script setup lang="ts" name="MenuFormDialog">
-import { computed, reactive, ref, watch } from "vue";
-import type { FormInstance } from "element-plus";
-import { dictStore } from "@vue-scaffold/constants";
-import type { MenuRecord } from "@/types/domain";
+import { computed, reactive, ref, toRefs, watch } from 'vue';
+import type { FormInstance } from 'element-plus';
+import { dictStore } from '@vue-scaffold/constants';
+import { messageAlert, useVModel } from '@vue-scaffold/utils';
+import { $apis } from '@/api/requests';
+import type { MenuRecord } from '@/types/domain';
+
+type MenuFormData = Omit<MenuRecord, 'id' | 'children'>;
 
 const props = defineProps<{
   modelValue: boolean;
-  record?: MenuRecord | null;
+  selectItem?: MenuRecord | null;
   menus: MenuRecord[];
 }>();
 
 const emit = defineEmits<{
-  "update:modelValue": [boolean];
-  submit: [payload: Omit<MenuRecord, "id" | "children">, id?: string];
+  'update:modelValue': [boolean];
+  success: [];
 }>();
 
 const formRef = ref<FormInstance>();
-const submitLoading = ref(false);
+const visible = useVModel(props, emit as any);
 
-const visible = computed({
-  get: () => props.modelValue,
-  set: (value) => emit("update:modelValue", value),
-});
+const modalProps = computed(() => ({
+  title: `${dataInfo.isEdit ? '编辑' : '新增'}菜单`,
+  width: 680,
+}));
 
-const isEdit = computed(() => Boolean(props.record?.id));
+const footerProps = computed(() => ({
+  buttons: [
+    { text: '取消', close: true, buttonProps: {} },
+    {
+      text: submitLoading.value ? '保存中...' : '保存',
+      close: false,
+      buttonProps: { type: 'primary', loading: submitLoading.value },
+      click: () => dataInfo.handleSubmit(),
+    },
+  ],
+}));
+
 const menuTree = computed(() => props.menus ?? []);
 
-const form = reactive<Omit<MenuRecord, "id" | "children">>({
-  parentId: null,
-  menuType: "C",
-  menuName: "",
-  path: "",
-  menuCode: "",
-  orderNum: 1,
-  enabled: true,
+const dataInfo = reactive({
+  formData: {
+    parentId: null,
+    menuType: 'C',
+    menuName: '',
+    path: '',
+    menuCode: '',
+    orderNum: 1,
+    enabled: true,
+  } as MenuFormData,
+  rules: {
+    menuType: [{ required: true, message: '请选择菜单类型', trigger: 'change' }],
+    menuName: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
+    path: [{ required: true, message: '请输入路径', trigger: 'blur' }],
+    menuCode: [{ required: true, message: '请输入权限编码', trigger: 'blur' }],
+  },
+  loading: false,
+  submitLoading: false,
+  get isEdit() {
+    return Boolean(props.selectItem?.id);
+  },
+  initForm() {
+    this.formData = {
+      parentId: null,
+      menuType: 'C',
+      menuName: '',
+      path: '',
+      menuCode: '',
+      orderNum: 1,
+      enabled: true,
+    };
+    formRef.value?.clearValidate();
+  },
+  async getDetail() {
+    if (!props.selectItem?.id) {
+      if (props.selectItem?.parentId) {
+        this.formData.parentId = props.selectItem.parentId;
+      }
+      return;
+    }
+
+    this.loading = true;
+    try {
+      const detail = await $apis.menus.detail({
+        id: Number(props.selectItem.id),
+      });
+      this.formData = mapMenuDetail(detail);
+    } finally {
+      this.loading = false;
+    }
+  },
+  get params() {
+    return {
+      id: this.isEdit ? Number(props.selectItem?.id) : undefined,
+      parentId: this.formData.parentId ? Number(this.formData.parentId) : 0,
+      menuType: this.formData.menuType,
+      name: this.formData.menuName,
+      path: this.formData.path,
+      permissionCode: this.formData.menuCode,
+      sortOrder: this.formData.orderNum,
+      visible: this.formData.enabled,
+    };
+  },
+  async handleSubmit() {
+    await formRef.value?.validate();
+    if (this.submitLoading) {
+      return;
+    }
+
+    this.submitLoading = true;
+    this.loading = true;
+    try {
+      await $apis.menus[this.isEdit ? 'update' : 'save'](this.params);
+      messageAlert({ message: this.isEdit ? '菜单更新成功' : '菜单创建成功' });
+      visible.value = false;
+      emit('success');
+    } finally {
+      this.submitLoading = false;
+      this.loading = false;
+    }
+  },
 });
 
-const rules = {
-  menuType: [{ required: true, message: "请选择菜单类型", trigger: "change" }],
-  menuName: [{ required: true, message: "请输入菜单名称", trigger: "blur" }],
-  path: [{ required: true, message: "请输入路径", trigger: "blur" }],
-  menuCode: [{ required: true, message: "请输入权限编码", trigger: "blur" }],
-};
+watch(visible, value => {
+  if (!value) {
+    dataInfo.initForm();
+    dataInfo.loading = false;
+    dataInfo.submitLoading = false;
+    return;
+  }
+  dataInfo.getDetail();
+});
 
-watch(
-  () => props.record,
-  (value) => {
-    form.parentId = value?.parentId ?? null;
-    form.menuType = value?.menuType ?? "C";
-    form.menuName = value?.menuName ?? "";
-    form.path = value?.path ?? "";
-    form.menuCode = value?.menuCode ?? "";
-    form.orderNum = value?.orderNum ?? 1;
-    form.enabled = value?.enabled ?? true;
-  },
-  { immediate: true },
-);
+function mapMenuType(menuType?: string | number): 'M' | 'C' | 'B' {
+  const typeStr = String(menuType ?? '').toUpperCase();
+  if (typeStr === 'M' || typeStr === 'C' || typeStr === 'B') {
+    return typeStr as 'M' | 'C' | 'B';
+  }
 
-async function handleSubmit() {
-  await formRef.value?.validate();
-  submitLoading.value = true;
-  try {
-    await emit("submit", { ...form }, props.record?.id);
-    visible.value = false;
-  } finally {
-    submitLoading.value = false;
+  switch (Number(menuType)) {
+    case 1:
+      return 'M';
+    case 2:
+    case 3:
+      return 'C';
+    case 4:
+      return 'B';
+    default:
+      return 'C';
   }
 }
+
+function mapMenuDetail(detail: Record<string, any>): MenuFormData {
+  return {
+    parentId:
+      detail.parentId === null || detail.parentId === undefined
+        ? null
+        : String(detail.parentId),
+    menuType: mapMenuType(detail.menuType),
+    menuName: detail.name ?? detail.menuName ?? '',
+    path: detail.path ?? '',
+    menuCode: detail.permissionCode ?? detail.menuCode ?? '',
+    orderNum: Number(detail.sortOrder ?? detail.orderNum ?? 1),
+    enabled: detail.visible !== false && Number(detail.visible ?? 1) !== 0,
+  };
+}
+
+const { formData, loading, submitLoading } = toRefs(dataInfo);
 </script>

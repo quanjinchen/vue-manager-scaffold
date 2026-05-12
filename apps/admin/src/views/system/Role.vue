@@ -1,239 +1,246 @@
 <template>
-  <section class="Role">
+  <main class="Role-root">
     <AppTableList>
       <AppListHeader>
-        <div class="header-search">
-          <AppInput
-            v-model="keyword"
-            placeholder="按角色名称或编码搜索"
-            :icon-props="{ place: 'suffix', name: 'Search' }"
-            @update:model-value="loadRoles"
-          />
-        </div>
-        <div class="header-handle">
-          <AppButton :button-props="{ loading }" @click="loadRoles()">刷新</AppButton>
-          <AppButton :button-props="{ type: 'primary' }" v-permission="'system:role:update'" @click="openCreate()">新增角色</AppButton>
-        </div>
+        <el-row :gutter="16" style="width: 100%">
+          <el-col :xs="24" :sm="24" :md="8" :lg="6" :xl="5">
+            <AppInput
+              v-model="searchParams.keyword"
+              placeholder="角色名称或编码"
+              :icon-props="{ place: 'suffix', name: 'Search' }"
+              @input="dataInfo.debounceSearch()"
+            />
+          </el-col>
+          <el-col :xs="24" :sm="24" :md="16" :lg="18" :xl="19">
+            <div class="header-handle">
+              <AppButton :button-props="{ loading }" @click="dataInfo.refreshPageData()">
+                刷新
+              </AppButton>
+              <AppButton
+                :button-props="{ type: 'primary' }"
+                v-permission="'system:role:update'"
+                @click="dataInfo.openCreate()"
+              >
+                新增角色
+              </AppButton>
+            </div>
+          </el-col>
+        </el-row>
       </AppListHeader>
 
       <AppTable
-        :table-props="{ data: rows }"
+        :table-props="{ data: list }"
         :table-info="tableInfo"
-        :page-info="{ pageNum: 1, pageSize: 10 }"
+        :page-info="pageInfo"
         :loading="loading"
-        @handle-click="handleAction"
+        @handle-click="dataInfo.handleAction"
+      />
+
+      <AppPager
+        v-model:page-index="pageInfo.pageNum"
+        v-model:page-size="pageInfo.pageSize"
+        :total="total"
+        @change="dataInfo.getList()"
       />
     </AppTableList>
 
-    <RoleFormDialog v-model="dialogVisible" :record="selectedRecord" @submit="handleSubmit" />
+    <RoleFormDialog
+      v-model="dataInfo.dialogVisible"
+      :select-item="dataInfo.selectedRecord"
+      @success="dataInfo.getList()"
+    />
+
     <GrantRoleMenusDialog
-      v-model="grantDialogVisible"
-      :role="selectedGrantRole"
+      v-model="dataInfo.grantDialogVisible"
+      :select-item="dataInfo.selectedGrantRole"
       :menus="grantMenus"
       :checked-menu-ids="checkedMenuIds"
-      @submit="handleGrantMenus"
+      @success="dataInfo.handleGrantSuccess"
     />
-  </section>
+  </main>
 </template>
 
 <script setup lang="ts" name="Role">
-  import { onMounted, ref } from 'vue';
-  import { messageAlert, messageConfirm } from '@vue-scaffold/utils';
-  import RoleFormDialog from '@/views/system/components/RoleFormDialog.vue';
-  import GrantRoleMenusDialog, { type GrantMenuTreeNode } from '@/views/system/components/GrantRoleMenusDialog.vue';
-  import { requests } from '@/api/requests';
-  import type { RoleRecord } from '@/types/domain';
+import { reactive, toRefs } from 'vue';
+import { debounce, messageAlert, messageConfirm } from '@vue-scaffold/utils';
+import RoleFormDialog from '@/views/system/components/RoleFormDialog.vue';
+import GrantRoleMenusDialog, { type GrantMenuTreeNode } from '@/views/system/components/GrantRoleMenusDialog.vue';
+import tableInfo from '@/views/system/tables/Role';
+import { $apis } from '@/api/requests';
+import type { RoleRecord } from '@/types/domain';
 
-  type RolePageItem = {
-    id: number | string;
-    code?: string;
-    name?: string;
-    status?: number;
-    remark?: string;
-    createTime?: string;
-    updateTime?: string;
-  };
+type RolePageItem = {
+  id: number | string;
+  code?: string;
+  name?: string;
+  status?: number;
+  remark?: string;
+  createTime?: string;
+  updateTime?: string;
+};
 
-  type MenuTreeItem = {
-    id: number | string;
-    name?: string;
-    path?: string;
-    children?: MenuTreeItem[];
-  };
+type MenuTreeItem = {
+  id: number | string;
+  name?: string;
+  path?: string;
+  children?: MenuTreeItem[];
+};
 
-  type RoleGrantInfo = {
-    menuIds?: number[];
-  };
+type RoleGrantInfo = {
+  menuIds?: number[];
+};
 
-  const dialogVisible = ref(false);
-  const grantDialogVisible = ref(false);
-  const keyword = ref('');
-  const selectedRecord = ref<RoleRecord | null>(null);
-  const selectedGrantRole = ref<RoleRecord | null>(null);
-  const grantMenus = ref<GrantMenuTreeNode[]>([]);
-  const checkedMenuIds = ref<number[]>([]);
-  const rows = ref<RoleRecord[]>([]);
-  const loading = ref(false);
-  const actionLoading = ref(false);
-
-  const tableInfo = {
-    columns: [
-      { key: 'ordinal', label: '#', genre: '$ordinal', width: 64 },
-      { key: 'roleName', prop: 'roleName', label: '角色名称', minWidth: 180 },
-      { key: 'roleCode', prop: 'roleCode', label: '角色编码', minWidth: 180 },
-      {
-        key: 'systemDefault',
-        prop: 'systemDefault',
-        label: '角色类型',
-        genre: '$tag',
-        width: 120,
-        tagText: (row: RoleRecord) => (row.systemDefault ? '内置角色' : '自定义角色'),
-        tagType: (row: RoleRecord) => (row.systemDefault ? 'success' : 'primary')
-      },
-      { key: 'userNum', prop: 'userNum', label: '用户数', width: 100 },
-      { key: 'userGroupNum', prop: 'userGroupNum', label: '分组数', width: 100 },
-      { key: 'updatedAt', prop: 'updatedAt', label: '更新时间', genre: '$date', minWidth: 180 },
-      {
-        key: 'actions',
-        label: '操作',
-        genre: '$action',
-        width: 280,
-        actions: [
-          { key: 'grantMenus', label: '分配菜单', permissions: 'system:role:update' },
-          { key: 'edit', label: '编辑', permissions: 'system:role:update' },
-          { key: 'delete', label: '删除', permissions: 'system:role:delete', type: 'danger', visible: (row: RoleRecord) => !row.systemDefault }
-        ]
-      }
-    ]
-  };
-
-  function mapRole(item: RolePageItem): RoleRecord {
+const dataInfo = reactive({
+  pageInfo: {
+    pageNum: 1,
+    pageSize: 10,
+  },
+  searchParams: {
+    keyword: '',
+  },
+  dialogVisible: false,
+  grantDialogVisible: false,
+  selectedRecord: null as RoleRecord | null,
+  selectedGrantRole: null as RoleRecord | null,
+  grantMenus: [] as GrantMenuTreeNode[],
+  checkedMenuIds: [] as number[],
+  list: [] as RoleRecord[],
+  total: 0,
+  loading: false,
+  actionLoading: false,
+  get params() {
     return {
-      id: String(item.id),
-      roleCode: item.code ?? '',
-      roleName: item.name ?? '',
-      userNum: 0,
-      userGroupNum: 0,
-      systemDefault: ['systemAdmin', 'ADMIN', 'SUPER_ADMIN'].includes(item.code ?? ''),
-      remark: item.remark ?? '',
-      createdAt: item.createTime ?? '',
-      updatedAt: item.updateTime ?? ''
+      ...this.pageInfo,
+      keyword: this.searchParams.keyword,
     };
-  }
-
-  function mapMenuTree(item: MenuTreeItem): GrantMenuTreeNode {
-    return {
-      id: String(item.id),
-      label: item.path ? `${item.name ?? ''} (${item.path})` : (item.name ?? ''),
-      children: Array.isArray(item.children) ? item.children.map(mapMenuTree) : []
-    };
-  }
-
-  async function loadRoles() {
-    loading.value = true;
+  },
+  async getList() {
+    this.loading = true;
     try {
-      const result = await requests.roles.list({
-        pageNum: 1,
-        pageSize: 100,
-        keyword: keyword.value
-      });
-      rows.value = Array.isArray(result?.records)
+      const result = await $apis.roles.list(this.params);
+      this.list = Array.isArray(result?.records)
         ? result.records.map((item: RolePageItem) => mapRole(item))
         : [];
+      this.total = Number(result?.total ?? 0);
     } finally {
-      loading.value = false;
+      this.loading = false;
     }
-  }
-
-  function openCreate() {
-    selectedRecord.value = null;
-    dialogVisible.value = true;
-  }
-
-  async function handleSubmit(payload: Omit<RoleRecord, 'id' | 'createdAt' | 'updatedAt' | 'userNum' | 'userGroupNum'>, id?: string) {
-    const requestBody = {
-      id: id ? Number(id) : undefined,
-      code: payload.roleCode,
-      name: payload.roleName,
-      status: 1,
-      remark: payload.remark ?? ''
-    };
-    if (id) {
-      await requests.roles.update(requestBody);
-      messageAlert({ message: '角色更新成功' });
-    } else {
-      await requests.roles.save(requestBody);
-      messageAlert({ message: '角色创建成功' });
+  },
+  async refreshPageData() {
+    this.loading = true;
+    try {
+      await this.getList();
+    } finally {
+      this.loading = false;
     }
-    await loadRoles();
-  }
-
-  async function openGrantMenus(row: RoleRecord) {
-    actionLoading.value = true;
+  },
+  search() {
+    this.pageInfo.pageNum = 1;
+    this.getList();
+  },
+  debounceSearch: debounce(function (this: any) {
+    this.search();
+  }, 300),
+  openCreate() {
+    this.selectedRecord = null;
+    this.dialogVisible = true;
+  },
+  openEdit(row: RoleRecord) {
+    this.selectedRecord = row;
+    this.dialogVisible = true;
+  },
+  async openGrantMenus(row: RoleRecord) {
+    this.actionLoading = true;
     try {
       const [menuResult, grantInfoResult] = await Promise.all([
-        requests.menus.tree({}),
-        requests.roles.grantInfo({ id: Number(row.id) })
+        $apis.menus.tree({}),
+        $apis.roles.grantInfo({ id: Number(row.id) }),
       ]);
-      grantMenus.value = Array.isArray(menuResult) ? menuResult.map((item: MenuTreeItem) => mapMenuTree(item)) : [];
-      checkedMenuIds.value = Array.isArray((grantInfoResult as RoleGrantInfo | undefined)?.menuIds)
+      this.grantMenus = Array.isArray(menuResult)
+        ? menuResult.map((item: MenuTreeItem) => mapMenuTree(item))
+        : [];
+      this.checkedMenuIds = Array.isArray((grantInfoResult as RoleGrantInfo | undefined)?.menuIds)
         ? (((grantInfoResult as RoleGrantInfo | undefined)?.menuIds) ?? [])
         : [];
-      selectedGrantRole.value = row;
-      grantDialogVisible.value = true;
+      this.selectedGrantRole = row;
+      this.grantDialogVisible = true;
     } finally {
-      actionLoading.value = false;
+      this.actionLoading = false;
     }
-  }
+  },
+  handleGrantSuccess() {
+    this.grantDialogVisible = false;
+  },
+  async deleteRole(row: RoleRecord) {
+    if (this.actionLoading) {
+      return;
+    }
 
-  async function handleGrantMenus(menuIds: number[]) {
-    if (!selectedGrantRole.value) {
+    this.actionLoading = true;
+    try {
+      await messageConfirm(`确认删除角色“${row.roleName}”吗？`);
+      await $apis.roles.delete({
+        roleId: Number(row.id),
+      });
+      messageAlert({ message: '角色删除成功' });
+      await this.getList();
+    } finally {
+      this.actionLoading = false;
+    }
+  },
+  async handleAction(row: RoleRecord, action: Record<string, any>) {
+    if (this.actionLoading) {
       return;
     }
-    await requests.roles.grantMenus({
-      roleId: Number(selectedGrantRole.value.id),
-      menuIds
-    });
-    messageAlert({ message: '角色菜单分配成功' });
-  }
 
-  async function handleAction(row: RoleRecord, action: Record<string, any>) {
-    if (actionLoading.value) {
-      return;
-    }
-    if (action.key === 'grantMenus') {
-      await openGrantMenus(row);
-      return;
-    }
-    if (action.key === 'edit') {
-      selectedRecord.value = row;
-      dialogVisible.value = true;
-      return;
-    }
-    if (action.key === 'delete') {
-      actionLoading.value = true;
-      try {
-        await messageConfirm(`确认删除角色“${row.roleName}”吗？`);
-        await requests.roles.delete({
-          roleId: Number(row.id)
-        });
-        messageAlert({ message: '角色删除成功' });
-        await loadRoles();
-      } finally {
-        actionLoading.value = false;
-      }
-    }
-  }
+    const actionMap: Record<string, () => void | Promise<void>> = {
+      grantMenus: () => this.openGrantMenus(row),
+      edit: () => this.openEdit(row),
+      delete: () => this.deleteRole(row),
+    };
 
-  onMounted(async () => {
-    await loadRoles();
-  });
+    await actionMap[action.key]?.();
+  },
+  async init() {
+    await this.getList();
+  },
+});
+
+function mapRole(item: RolePageItem): RoleRecord {
+  return {
+    id: String(item.id),
+    roleCode: item.code ?? '',
+    roleName: item.name ?? '',
+    userNum: 0,
+    userGroupNum: 0,
+    systemDefault: ['systemAdmin', 'ADMIN', 'SUPER_ADMIN'].includes(item.code ?? ''),
+    remark: item.remark ?? '',
+    createdAt: item.createTime ?? '',
+    updatedAt: item.updateTime ?? '',
+  };
+}
+
+function mapMenuTree(item: MenuTreeItem): GrantMenuTreeNode {
+  return {
+    id: String(item.id),
+    label: item.path ? `${item.name ?? ''} (${item.path})` : (item.name ?? ''),
+    children: Array.isArray(item.children) ? item.children.map(mapMenuTree) : [],
+  };
+}
+
+const { pageInfo, searchParams, grantMenus, checkedMenuIds, list, total, loading } = toRefs(dataInfo);
+
+dataInfo.init();
 </script>
 
 <style scoped lang="scss">
-  .Role {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
+.Role-root {
+  height: 100%;
+}
+
+.header-handle {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
 </style>

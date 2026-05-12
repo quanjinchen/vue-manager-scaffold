@@ -1,15 +1,10 @@
 <template>
   <AppDialog
     v-model="visible"
-    :modal-props="{ title: `分配组织用户${organization ? ` - ${organization.orgName}` : ''}`, width: 680 }"
-    :footer-props="{
-      buttons: [
-        { text: '取消', close: true, buttonProps: {} },
-        { text: submitLoading ? '保存中...' : '保存', close: false, buttonProps: { type: 'primary', loading: submitLoading }, click: handleSubmit }
-      ]
-    }"
+    :modal-props="modalProps"
+    :footer-props="footerProps"
   >
-    <el-form label-position="top">
+    <el-form v-loading="loading" label-position="top">
       <el-form-item label="用户列表">
         <AppSelectV2
           v-model="selectedUserIds"
@@ -22,49 +17,85 @@
 </template>
 
 <script setup lang="ts" name="GrantOrgUsersDialog">
-  import { computed, ref, watch } from 'vue';
-  import type { OrganizationRecord } from '@/types/domain';
+import { computed, ref, watch } from 'vue';
+import { messageAlert, useVModel } from '@vue-scaffold/utils';
+import { $apis } from '@/api/requests';
+import type { OrganizationRecord } from '@/types/domain';
 
-  export type GrantUserOption = {
-    id: string;
-    name: string;
-  };
+export type GrantUserOption = {
+  id: string;
+  name: string;
+};
 
-  const props = defineProps<{
-    modelValue: boolean;
-    organization?: OrganizationRecord | null;
-    users: GrantUserOption[];
-    checkedUserIds: number[];
-  }>();
+const props = defineProps<{
+  modelValue: boolean;
+  organization?: OrganizationRecord | null;
+  users: GrantUserOption[];
+  checkedUserIds: number[];
+}>();
 
-  const emit = defineEmits<{
-    'update:modelValue': [boolean];
-    submit: [userIds: number[]];
-  }>();
+const emit = defineEmits<{
+  'update:modelValue': [boolean];
+  success: [];
+}>();
 
-  const submitLoading = ref(false);
-  const selectedUserIds = ref<string[]>([]);
+const visible = useVModel(props, emit as any);
+const selectedUserIds = ref<string[]>([]);
+const loading = ref(false);
+const submitLoading = ref(false);
 
-  const visible = computed({
-    get: () => props.modelValue,
-    set: value => emit('update:modelValue', value)
-  });
+const modalProps = computed(() => ({
+  title: `分配组织用户${props.organization ? ` - ${props.organization.orgName}` : ''}`,
+  width: 680,
+}));
 
-  watch(
-    () => props.checkedUserIds,
-    value => {
-      selectedUserIds.value = (value ?? []).map(item => String(item));
+const footerProps = computed(() => ({
+  buttons: [
+    { text: '取消', close: true, buttonProps: {} },
+    {
+      text: submitLoading.value ? '保存中...' : '保存',
+      close: false,
+      buttonProps: { type: 'primary', loading: submitLoading.value },
+      click: () => handleSubmit(),
     },
-    { immediate: true, deep: true }
-  );
+  ],
+}));
 
-  async function handleSubmit() {
-    submitLoading.value = true;
-    try {
-      await emit('submit', selectedUserIds.value.map(item => Number(item)).filter(item => !Number.isNaN(item)));
-      visible.value = false;
-    } finally {
-      submitLoading.value = false;
-    }
+watch(
+  () => props.checkedUserIds,
+  value => {
+    selectedUserIds.value = (value ?? []).map(item => String(item));
+  },
+  { immediate: true, deep: true },
+);
+
+watch(visible, value => {
+  if (!value) {
+    loading.value = false;
+    submitLoading.value = false;
   }
+});
+
+async function handleSubmit() {
+  if (!props.organization?.id || submitLoading.value) {
+    return;
+  }
+
+  submitLoading.value = true;
+  loading.value = true;
+  try {
+    await $apis.orgUsers.grant({
+      orgId: Number(props.organization.id),
+      userIds: selectedUserIds.value
+        .map(item => Number(item))
+        .filter(item => !Number.isNaN(item)),
+    });
+    messageAlert({ message: '组织用户分配成功' });
+    visible.value = false;
+    emit('success');
+  } finally {
+    submitLoading.value = false;
+    loading.value = false;
+  }
+}
 </script>

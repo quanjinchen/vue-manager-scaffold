@@ -1,34 +1,44 @@
 <template>
   <AppDialog
     v-model="visible"
-    :modal-props="{ title: `${isEdit ? '编辑' : '新增'}角色`, width: 640 }"
-    :footer-props="{
-      buttons: [
-        { text: '取消', close: true, buttonProps: {} },
-        { text: submitLoading ? '保存中...' : '保存', close: false, buttonProps: { type: 'primary', loading: submitLoading }, click: handleSubmit }
-      ]
-    }"
+    :modal-props="modalProps"
+    :footer-props="footerProps"
   >
-    <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
+    <el-form
+      ref="formRef"
+      v-loading="loading"
+      :model="formData"
+      :rules="dataInfo.rules"
+      label-position="top"
+    >
       <el-row :gutter="16">
         <el-col :span="12">
           <el-form-item label="角色名称" prop="roleName">
-            <AppInput v-model="form.roleName" v-trim placeholder="请输入角色名称" />
+            <AppInput v-model="formData.roleName" v-trim placeholder="请输入角色名称" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="角色编码" prop="roleCode">
-            <AppInput v-model="form.roleCode" v-trim placeholder="请输入角色编码" :input-props="{ disabled: isEdit && form.systemDefault }" />
+            <AppInput
+              v-model="formData.roleCode"
+              v-trim
+              placeholder="请输入角色编码"
+              :input-props="{ disabled: dataInfo.isEdit && formData.systemDefault }"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="是否默认角色" prop="systemDefault">
-            <AppSwitch v-model="form.systemDefault" />
+            <AppSwitch v-model="formData.systemDefault" />
           </el-form-item>
         </el-col>
         <el-col :span="24">
           <el-form-item label="备注" prop="remark">
-            <AppInput v-model="form.remark" placeholder="请输入备注" :input-props="{ type: 'textarea', rows: 3 }" />
+            <AppInput
+              v-model="formData.remark"
+              placeholder="请输入备注"
+              :input-props="{ type: 'textarea', rows: 3 }"
+            />
           </el-form-item>
         </el-col>
       </el-row>
@@ -37,61 +47,131 @@
 </template>
 
 <script setup lang="ts" name="RoleFormDialog">
-  import { computed, reactive, ref, watch } from 'vue';
-  import type { FormInstance } from 'element-plus';
-  import type { RoleRecord } from '@/types/domain';
+import { computed, reactive, ref, toRefs, watch } from 'vue';
+import type { FormInstance } from 'element-plus';
+import { messageAlert, useVModel } from '@vue-scaffold/utils';
+import { $apis } from '@/api/requests';
+import type { RoleRecord } from '@/types/domain';
 
-  const props = defineProps<{
-    modelValue: boolean;
-    record?: RoleRecord | null;
-  }>();
+type RoleFormData = Omit<RoleRecord, 'id' | 'createdAt' | 'updatedAt' | 'userNum' | 'userGroupNum'>;
 
-  const emit = defineEmits<{
-    'update:modelValue': [boolean];
-    submit: [payload: Omit<RoleRecord, 'id' | 'createdAt' | 'updatedAt' | 'userNum' | 'userGroupNum'>, id?: string];
-  }>();
+const props = defineProps<{
+  modelValue: boolean;
+  selectItem?: RoleRecord | null;
+}>();
 
-  const formRef = ref<FormInstance>();
-  const submitLoading = ref(false);
+const emit = defineEmits<{
+  'update:modelValue': [boolean];
+  success: [];
+}>();
 
-  const visible = computed({
-    get: () => props.modelValue,
-    set: value => emit('update:modelValue', value)
-  });
+const formRef = ref<FormInstance>();
+const visible = useVModel(props, emit as any);
 
-  const isEdit = computed(() => Boolean(props.record?.id));
+const modalProps = computed(() => ({
+  title: `${dataInfo.isEdit ? '编辑' : '新增'}角色`,
+  width: 640,
+}));
 
-  const form = reactive<Omit<RoleRecord, 'id' | 'createdAt' | 'updatedAt' | 'userNum' | 'userGroupNum'>>({
+const footerProps = computed(() => ({
+  buttons: [
+    { text: '取消', close: true, buttonProps: {} },
+    {
+      text: submitLoading.value ? '保存中...' : '保存',
+      close: false,
+      buttonProps: { type: 'primary', loading: submitLoading.value },
+      click: () => dataInfo.handleSubmit(),
+    },
+  ],
+}));
+
+const dataInfo = reactive({
+  formData: {
     roleCode: '',
     roleName: '',
     systemDefault: false,
-    remark: ''
-  });
-
-  const rules = {
+    remark: '',
+  } as RoleFormData,
+  rules: {
     roleName: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
-    roleCode: [{ required: true, message: '请输入角色编码', trigger: 'blur' }]
-  };
-
-  watch(
-    () => props.record,
-    value => {
-      form.roleCode = value?.roleCode ?? '';
-      form.roleName = value?.roleName ?? '';
-      form.systemDefault = value?.systemDefault ?? false;
-      form.remark = value?.remark ?? '';
-    },
-    { immediate: true }
-  );
-
-  async function handleSubmit() {
-    await formRef.value?.validate();
-    submitLoading.value = true;
-    try {
-      await emit('submit', { ...form }, props.record?.id);
-      visible.value = false;
-    } finally {
-      submitLoading.value = false;
+    roleCode: [{ required: true, message: '请输入角色编码', trigger: 'blur' }],
+  },
+  loading: false,
+  submitLoading: false,
+  get isEdit() {
+    return Boolean(props.selectItem?.id);
+  },
+  initForm() {
+    this.formData = {
+      roleCode: '',
+      roleName: '',
+      systemDefault: false,
+      remark: '',
+    };
+    formRef.value?.clearValidate();
+  },
+  async getDetail() {
+    if (!props.selectItem?.id) {
+      return;
     }
+
+    this.loading = true;
+    try {
+      const detail = await $apis.roles.detail({
+        id: Number(props.selectItem.id),
+      });
+      this.formData = mapRoleDetail(detail);
+    } finally {
+      this.loading = false;
+    }
+  },
+  get params() {
+    return {
+      id: this.isEdit ? Number(props.selectItem?.id) : undefined,
+      code: this.formData.roleCode,
+      name: this.formData.roleName,
+      status: 1,
+      remark: this.formData.remark ?? '',
+    };
+  },
+  async handleSubmit() {
+    await formRef.value?.validate();
+    if (this.submitLoading) {
+      return;
+    }
+
+    this.submitLoading = true;
+    this.loading = true;
+    try {
+      await $apis.roles[this.isEdit ? 'update' : 'save'](this.params);
+      messageAlert({ message: this.isEdit ? '角色更新成功' : '角色创建成功' });
+      visible.value = false;
+      emit('success');
+    } finally {
+      this.submitLoading = false;
+      this.loading = false;
+    }
+  },
+});
+
+watch(visible, value => {
+  if (!value) {
+    dataInfo.initForm();
+    dataInfo.loading = false;
+    dataInfo.submitLoading = false;
+    return;
   }
+  dataInfo.getDetail();
+});
+
+function mapRoleDetail(detail: Record<string, any>): RoleFormData {
+  return {
+    roleCode: detail.code ?? detail.roleCode ?? '',
+    roleName: detail.name ?? detail.roleName ?? '',
+    systemDefault: Boolean(detail.systemDefault),
+    remark: detail.remark ?? '',
+  };
+}
+
+const { formData, loading, submitLoading } = toRefs(dataInfo);
 </script>

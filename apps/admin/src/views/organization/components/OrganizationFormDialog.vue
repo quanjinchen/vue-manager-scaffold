@@ -1,18 +1,19 @@
 <template>
   <AppDialog
     v-model="visible"
-    :modal-props="{ title: `${isEdit ? '编辑' : '新增'}组织`, width: 640 }"
-    :footer-props="{
-      buttons: [
-        { text: '取消', close: true, buttonProps: {} },
-        { text: submitLoading ? '保存中...' : '保存', close: false, buttonProps: { type: 'primary', loading: submitLoading }, click: handleSubmit }
-      ]
-    }"
+    :modal-props="modalProps"
+    :footer-props="footerProps"
   >
-    <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
+    <el-form
+      ref="formRef"
+      v-loading="loading"
+      :model="formData"
+      :rules="dataInfo.rules"
+      label-position="top"
+    >
       <el-form-item label="上级组织" prop="parentId">
         <el-tree-select
-          v-model="form.parentId"
+          v-model="formData.parentId"
           style="width: 100%"
           :data="organizationTree"
           node-key="id"
@@ -27,22 +28,29 @@
       <el-row :gutter="16">
         <el-col :span="12">
           <el-form-item label="组织名称" prop="orgName">
-            <AppInput v-model="form.orgName" v-trim placeholder="请输入组织名称" />
+            <AppInput v-model="formData.orgName" v-trim placeholder="请输入组织名称" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="组织简称" prop="shortName">
-            <AppInput v-model="form.shortName" v-trim placeholder="请输入组织简称" />
+            <AppInput v-model="formData.shortName" v-trim placeholder="请输入组织简称" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="排序" prop="orderNum">
-            <AppInputNumber v-model="form.orderNum" :input-number-props="{ min: 1, max: 9999, style: 'width: 100%', placeholder: '请输入排序' }" />
+            <AppInputNumber
+              v-model="formData.orderNum"
+              :input-number-props="{ min: 1, max: 9999, style: 'width: 100%', placeholder: '请输入排序' }"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="24">
           <el-form-item label="备注" prop="remark">
-            <AppInput v-model="form.remark" placeholder="请输入备注" :input-props="{ type: 'textarea', rows: 3 }" />
+            <AppInput
+              v-model="formData.remark"
+              placeholder="请输入备注"
+              :input-props="{ type: 'textarea', rows: 3 }"
+            />
           </el-form-item>
         </el-col>
       </el-row>
@@ -51,65 +59,145 @@
 </template>
 
 <script setup lang="ts" name="OrganizationFormDialog">
-  import { computed, reactive, ref, watch } from 'vue';
-  import type { FormInstance } from 'element-plus';
+import { computed, reactive, ref, toRefs, watch } from 'vue';
+import type { FormInstance } from 'element-plus';
+import { messageAlert, useVModel } from '@vue-scaffold/utils';
+import { $apis } from '@/api/requests';
 import type { OrganizationRecord } from '@/types/domain';
 
-  const props = defineProps<{
-    modelValue: boolean;
-    record?: OrganizationRecord | null;
-    organizations: OrganizationRecord[];
-  }>();
+type OrganizationFormData = Omit<OrganizationRecord, 'id' | 'children'>;
 
-  const emit = defineEmits<{
-    'update:modelValue': [boolean];
-    submit: [payload: Omit<OrganizationRecord, 'id' | 'children'>, id?: string];
-  }>();
+const props = defineProps<{
+  modelValue: boolean;
+  selectItem?: OrganizationRecord | null;
+  organizations: OrganizationRecord[];
+}>();
 
-  const formRef = ref<FormInstance>();
-  const submitLoading = ref(false);
+const emit = defineEmits<{
+  'update:modelValue': [boolean];
+  success: [];
+}>();
 
-  const visible = computed({
-    get: () => props.modelValue,
-    set: value => emit('update:modelValue', value)
-  });
+const formRef = ref<FormInstance>();
+const visible = useVModel(props, emit as any);
 
-  const isEdit = computed(() => Boolean(props.record?.id));
-  const organizationTree = computed(() => props.organizations ?? []);
+const modalProps = computed(() => ({
+  title: `${dataInfo.isEdit ? '编辑' : '新增'}组织`,
+  width: 640,
+}));
 
-  const form = reactive<Omit<OrganizationRecord, 'id' | 'children'>>({
+const footerProps = computed(() => ({
+  buttons: [
+    { text: '取消', close: true, buttonProps: {} },
+    {
+      text: submitLoading.value ? '保存中...' : '保存',
+      close: false,
+      buttonProps: { type: 'primary', loading: submitLoading.value },
+      click: () => dataInfo.handleSubmit(),
+    },
+  ],
+}));
+
+const organizationTree = computed(() => props.organizations ?? []);
+
+const dataInfo = reactive({
+  formData: {
     parentId: null,
     orgName: '',
     shortName: '',
     orderNum: 1,
-    remark: ''
-  });
-
-  const rules = {
+    remark: '',
+  } as OrganizationFormData,
+  rules: {
     orgName: [{ required: true, message: '请输入组织名称', trigger: 'blur' }],
-    orderNum: [{ required: true, message: '请输入排序值', trigger: 'change' }]
-  };
-
-  watch(
-    () => props.record,
-    value => {
-      form.parentId = value?.parentId ?? null;
-      form.orgName = value?.orgName ?? '';
-      form.shortName = value?.shortName ?? '';
-      form.orderNum = value?.orderNum ?? 1;
-      form.remark = value?.remark ?? '';
-    },
-    { immediate: true }
-  );
-
-  async function handleSubmit() {
-    await formRef.value?.validate();
-    submitLoading.value = true;
-    try {
-      await emit('submit', { ...form }, props.record?.id);
-      visible.value = false;
-    } finally {
-      submitLoading.value = false;
+    orderNum: [{ required: true, message: '请输入排序', trigger: 'change' }],
+  },
+  loading: false,
+  submitLoading: false,
+  get isEdit() {
+    return Boolean(props.selectItem?.id);
+  },
+  initForm() {
+    this.formData = {
+      parentId: null,
+      orgName: '',
+      shortName: '',
+      orderNum: 1,
+      remark: '',
+    };
+    formRef.value?.clearValidate();
+  },
+  async getDetail() {
+    if (!props.selectItem?.id) {
+      if (props.selectItem?.parentId) {
+        this.formData.parentId = props.selectItem.parentId;
+      }
+      return;
     }
+
+    this.loading = true;
+    try {
+      const detail = await $apis.organizations.detail({
+        id: Number(props.selectItem.id),
+      });
+      this.formData = mapOrganizationDetail(detail);
+    } finally {
+      this.loading = false;
+    }
+  },
+  get params() {
+    return {
+      id: this.isEdit ? Number(props.selectItem?.id) : undefined,
+      parentId: this.formData.parentId ? Number(this.formData.parentId) : 0,
+      orgCode: this.formData.shortName ?? '',
+      name: this.formData.orgName,
+      leaderName: this.formData.remark ?? '',
+      sortOrder: this.formData.orderNum,
+      status: 1,
+    };
+  },
+  async handleSubmit() {
+    await formRef.value?.validate();
+    if (this.submitLoading) {
+      return;
+    }
+
+    this.submitLoading = true;
+    this.loading = true;
+    try {
+      await $apis.organizations[this.isEdit ? 'update' : 'save'](this.params);
+      messageAlert({ message: this.isEdit ? '组织更新成功' : '组织创建成功' });
+      visible.value = false;
+      emit('success');
+    } finally {
+      this.submitLoading = false;
+      this.loading = false;
+    }
+  },
+});
+
+watch(visible, value => {
+  if (!value) {
+    dataInfo.initForm();
+    dataInfo.loading = false;
+    dataInfo.submitLoading = false;
+    return;
   }
+  dataInfo.getDetail();
+});
+
+function mapOrganizationDetail(detail: Record<string, any>): OrganizationFormData {
+  return {
+    parentId:
+      detail.parentId === null || detail.parentId === undefined
+        ? null
+        : String(detail.parentId),
+    orgName: detail.name ?? detail.orgName ?? '',
+    shortName: detail.orgCode ?? detail.shortName ?? '',
+    orderNum: Number(detail.sortOrder ?? detail.orderNum ?? 1),
+    remark: detail.leaderName ?? detail.remark ?? '',
+  };
+}
+
+const { formData, loading, submitLoading } = toRefs(dataInfo);
 </script>

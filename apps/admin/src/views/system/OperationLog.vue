@@ -1,127 +1,120 @@
 <template>
-  <section class="OperationLog">
+  <main class="OperationLog-root">
     <AppTableList>
       <AppListHeader>
-        <div class="header-search">
-          <div class="summary-text">
-            记录管理员登录、退出、菜单维护、用户维护等操作行为，便于后续审计排查。
-          </div>
-        </div>
-        <div class="header-handle">
-          <AppButton :button-props="{ loading }" @click="loadLogs">刷新</AppButton>
-        </div>
+        <el-row :gutter="16" style="width: 100%">
+          <el-col :xs="24" :sm="24" :md="10" :lg="8" :xl="6">
+            <AppInput
+              v-model="searchParams.keyword"
+              placeholder="模块、动作、操作人"
+              :icon-props="{ place: 'suffix', name: 'Search' }"
+            />
+          </el-col>
+          <el-col :xs="24" :sm="24" :md="14" :lg="16" :xl="18">
+            <div class="header-handle">
+              <AppButton :button-props="{ loading }" @click="dataInfo.refreshPageData()">
+                刷新
+              </AppButton>
+            </div>
+          </el-col>
+        </el-row>
       </AppListHeader>
 
       <AppTable
-        :table-props="{ data: rows }"
+        :table-props="{ data: filteredList }"
         :table-info="tableInfo"
-        :page-info="{ pageNum, pageSize }"
+        :page-info="pageInfo"
         :loading="loading"
       />
 
-      <div class="pagination-wrap">
-        <el-pagination
-          background
-          layout="total, prev, pager, next, sizes"
-          :total="total"
-          :current-page="pageNum"
-          :page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          @current-change="handleCurrentChange"
-          @size-change="handleSizeChange"
-        />
-      </div>
+      <AppPager
+        v-model:page-index="pageInfo.pageNum"
+        v-model:page-size="pageInfo.pageSize"
+        :total="total"
+        @change="dataInfo.getList()"
+      />
     </AppTableList>
-  </section>
+  </main>
 </template>
 
 <script setup lang="ts" name="OperationLog">
-  import { onMounted, ref } from 'vue';
-  import { requests } from '@/api/requests';
+import { computed, reactive, toRefs } from 'vue';
+import { $apis } from '@/api/requests';
+import tableInfo from '@/views/system/tables/OperationLog';
 
-  type OperationLogRecord = {
-    id: string | number;
-    moduleName?: string;
-    actionName?: string;
-    operatorName?: string;
-    requestPath?: string;
-    successFlag?: boolean;
-    requestTime?: string;
-  };
-
-  const loading = ref(false);
-  const rows = ref<OperationLogRecord[]>([]);
-  const total = ref(0);
-  const pageNum = ref(1);
-  const pageSize = ref(10);
-
-  const tableInfo = {
-    columns: [
-      { key: 'ordinal', label: '#', genre: '$ordinal', width: 64 },
-      { key: 'moduleName', prop: 'moduleName', label: '模块', minWidth: 140 },
-      { key: 'actionName', prop: 'actionName', label: '动作', minWidth: 140 },
-      { key: 'operatorName', prop: 'operatorName', label: '操作人', minWidth: 140 },
-      { key: 'requestPath', prop: 'requestPath', label: '请求路径', minWidth: 260 },
-      {
-        key: 'successFlag',
-        prop: 'successFlag',
-        label: '结果',
-        genre: '$tag',
-        width: 120,
-        tagText: (row: OperationLogRecord) => row.successFlag ? '成功' : '失败',
-        tagType: (row: OperationLogRecord) => row.successFlag ? 'success' : 'danger'
-      },
-      { key: 'requestTime', prop: 'requestTime', label: '操作时间', genre: '$date', minWidth: 180 }
-    ]
-  };
-
-  async function loadLogs() {
-    loading.value = true;
+const dataInfo = reactive({
+  pageInfo: {
+    pageNum: 1,
+    pageSize: 10,
+  },
+  searchParams: {
+    keyword: '',
+  },
+  list: [] as Record<string, any>[],
+  total: 0,
+  loading: false,
+  get params() {
+    return {
+      pageNum: this.pageInfo.pageNum,
+      pageSize: this.pageInfo.pageSize,
+    };
+  },
+  async getList() {
+    this.loading = true;
     try {
-      const result = await requests.operationLogs.page({
-        pageNum: pageNum.value,
-        pageSize: pageSize.value
-      });
-      rows.value = Array.isArray(result?.records) ? result.records : [];
-      total.value = Number(result?.total ?? 0);
-      pageNum.value = Number(result?.pageNum ?? pageNum.value);
-      pageSize.value = Number(result?.pageSize ?? pageSize.value);
+      const result = await $apis.operationLogs.page(this.params);
+      this.list = Array.isArray(result?.records) ? result.records : [];
+      this.total = Number(result?.total ?? 0);
+      this.pageInfo.pageNum = Number(result?.pageNum ?? this.pageInfo.pageNum);
+      this.pageInfo.pageSize = Number(result?.pageSize ?? this.pageInfo.pageSize);
     } finally {
-      loading.value = false;
+      this.loading = false;
     }
+  },
+  async refreshPageData() {
+    this.loading = true;
+    try {
+      await this.getList();
+    } finally {
+      this.loading = false;
+    }
+  },
+  async init() {
+    await this.getList();
+  },
+});
+
+const filteredList = computed(() => {
+  const keyword = dataInfo.searchParams.keyword.trim().toLowerCase();
+  if (!keyword) {
+    return dataInfo.list;
   }
 
-  async function handleCurrentChange(value: number) {
-    pageNum.value = value;
-    await loadLogs();
-  }
-
-  async function handleSizeChange(value: number) {
-    pageSize.value = value;
-    pageNum.value = 1;
-    await loadLogs();
-  }
-
-  onMounted(async () => {
-    await loadLogs();
+  return dataInfo.list.filter(item => {
+    const moduleName = String(item.moduleName ?? '').toLowerCase();
+    const actionName = String(item.actionName ?? '').toLowerCase();
+    const operatorName = String(item.operatorName ?? '').toLowerCase();
+    return (
+      moduleName.includes(keyword) ||
+      actionName.includes(keyword) ||
+      operatorName.includes(keyword)
+    );
   });
+});
+
+const { pageInfo, searchParams, total, loading } = toRefs(dataInfo);
+
+dataInfo.init();
 </script>
 
 <style scoped lang="scss">
-  .OperationLog {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
+.OperationLog-root {
+  height: 100%;
+}
 
-  .summary-text {
-    color: #667085;
-    line-height: 1.6;
-  }
-
-  .pagination-wrap {
-    margin-top: 16px;
-    display: flex;
-    justify-content: flex-end;
-  }
+.header-handle {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
 </style>

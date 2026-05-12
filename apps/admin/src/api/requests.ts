@@ -2,137 +2,132 @@ import { appRequest, type AppRequestMethodOptions } from '@/api/app-request';
 
 type RequestParams = Record<string, any>;
 
-export const requests = {
+export const $apis = {
   login: {
-    accountLogin(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/admin/login', params, options);
+    accountLogin(params: RequestParams = {}) {
+      return appRequest.post('/api/admin/login', params);
     },
-    logout(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/admin/logout', params, options);
+    logout(params: RequestParams = {}) {
+      return appRequest.post('/api/admin/logout', params);
     },
-    getLoginInfo(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/admin/get-login-info', params, options);
+    getLoginInfo(params: RequestParams = {}) {
+      return appRequest.post('/api/admin/get-login-info', params);
     },
-    getCaptcha(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/admin/get-captcha', params, options);
+    getCaptcha(params: RequestParams = {}) {
+      return appRequest.post('/api/admin/get-captcha', params);
     }
   },
   dashboard: {
-    summary(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/dashboard/summary', params, options);
+    summary(params: RequestParams = {}) {
+      return appRequest.post('/api/dashboard/summary', params);
     }
   },
   operationLogs: {
-    page(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/operation-log/list-operation-log', params, options);
+    page(params: RequestParams = {}) {
+      return appRequest.post('/api/operation-log/list-operation-log', params);
     }
   },
   users: {
-    list(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/user/list-user', params, options);
+    list(params: RequestParams = {}) {
+      return appRequest.post('/api/user/list-user', params);
     },
-    detail(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.get('/api/user/detail', params, {
+    detail(params: RequestParams = {}) {
+      return appRequest.get('/api/user/get-user-by-id', params, {
         appendPathOnGet: true,
-        ...options
       });
     },
-    create(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/user/create-user', params, options);
+    create(params: RequestParams = {}) {
+      return appRequest.post('/api/user/create-user', params);
     },
-    update(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/user/update-user', params, options);
+    update(params: RequestParams = {}) {
+      return appRequest.post('/api/user/update-user', params);
     },
-    delete(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/user/delete-user', params, options);
+    delete(params: RequestParams = {}) {
+      return appRequest.post('/api/user/delete-user', params);
     },
-    resetPassword(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/user/reset-user-password', params, options);
+    resetPassword(params: RequestParams = {}) {
+      return appRequest.post('/api/user/reset-user-password', params);
     }
   },
   organizations: {
-    tree(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/org/list-all-org-tree', params, options);
+    tree(params: RequestParams = {}) {
+      return appRequest.post('/api/org/list-all-org-tree', params);
     },
-    detail(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
+    detail(params: RequestParams = {}) {
       return appRequest.get('/api/org/detail', params, {
         appendPathOnGet: true,
-        ...options
       });
     },
-    save(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/org/create-org', params, options);
+    save(params: RequestParams = {}) {
+      return appRequest.post('/api/org/create-org', params);
     },
-    update(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/org/update-org', params, options);
+    update(params: RequestParams = {}) {
+      return appRequest.post('/api/org/update-org', params);
     },
-    delete(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/org/delete-org', params, options);
+    delete(params: RequestParams = {}) {
+      return appRequest.post('/api/org/delete-org', params);
     }
   },
   menus: {
-    tree(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/menu/list-all-menu-tree', params, options);
+    tree(params: RequestParams = {}) {
+      return appRequest.post('/api/menu/list-all-menu-tree', params);
     },
-    save(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/menu/create-menu', params, options);
+    save(params: RequestParams = {}) {
+      return appRequest.post('/api/menu/create-menu', params);
     },
-    update(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/menu/update-menu', params, options);
+    update(params: RequestParams = {}) {
+      return appRequest.post('/api/menu/update-menu', params);
     },
-    delete(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/menu/delete-menu', params, options);
+    delete(params: RequestParams = {}) {
+      return appRequest.post('/api/menu/delete-menu', params);
     },
-    detail(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
+    detail(params: RequestParams = {}) {
       return appRequest.get('/api/menu/detail', params, {
         appendPathOnGet: true,
-        ...options
       });
     }
   },
   roles: {
-    list(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/role/list-role', params, options);
+    list(params: RequestParams = {}) {
+      return appRequest.post('/api/role/list-role', params);
     },
-    detail(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
+    detail(params: RequestParams = {}) {
       return appRequest.get('/api/role/detail', params, {
         appendPathOnGet: true,
-        ...options
       });
     },
-    save(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/role/create-role', params, options);
+    save(params: RequestParams = {}) {
+      return appRequest.post('/api/role/create-role', params);
     },
-    update(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/role/update-role', params, options);
+    update(params: RequestParams = {}) {
+      return appRequest.post('/api/role/update-role', params);
     },
-    delete(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/role/delete-role', params, options);
+    delete(params: RequestParams = {}) {
+      return appRequest.post('/api/role/delete-role', params);
     },
-    grantInfo(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
+    grantInfo(params: RequestParams = {}) {
       return appRequest.get('/api/role/get-role-grant-info-by-role-id', params, {
         appendPathOnGet: true,
-        ...options
       });
     },
-    grantMenus(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/role/grant-role-menus', params, options);
+    grantMenus(params: RequestParams = {}) {
+      return appRequest.post('/api/role/grant-role-menus', params);
     }
   },
   userRoles: {
-    list(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/user-role/list-user-role', params, options);
+    list(params: RequestParams = {}) {
+      return appRequest.post('/api/user-role/list-user-role', params);
     },
-    grant(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/user-role/grant-user-roles', params, options);
+    grant(params: RequestParams = {}) {
+      return appRequest.post('/api/user-role/grant-user-roles', params);
     }
   },
   orgUsers: {
-    list(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/org-user/list-org-user', params, options);
+    list(params: RequestParams = {}) {
+      return appRequest.post('/api/org-user/list-org-user', params);
     },
-    grant(params: RequestParams = {}, options: AppRequestMethodOptions = {}) {
-      return appRequest.post('/api/org-user/grant-org-users', params, options);
+    grant(params: RequestParams = {}) {
+      return appRequest.post('/api/org-user/grant-org-users', params);
     }
   }
 };

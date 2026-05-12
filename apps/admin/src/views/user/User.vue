@@ -82,7 +82,7 @@
 import { reactive, toRefs } from "vue";
 import { messageAlert, messageConfirm, debounce } from "@vue-scaffold/utils";
 import UserFormDialog from "@/views/user/components/UserFormDialog.vue";
-import { requests } from "@/api/requests";
+import { $apis } from "@/api/requests";
 import type { UserRecord } from "@/types/domain";
 import tableInfo from "@/views/user/tables/User";
 
@@ -112,7 +112,7 @@ const dataInfo: any = reactive({
   async getList() {
     this.loading = true;
     try {
-      const data = await requests.users.list(this.params);
+      const data = await $apis.users.list(this.params);
       this.total = data?.total;
       this.list = data.records;
     } finally {
@@ -160,7 +160,7 @@ const dataInfo: any = reactive({
       await messageConfirm(
         `确认重置用户"${row.fullName || row.userName}"的密码吗？`,
       );
-      await requests.users.resetPassword({
+      await $apis.users.resetPassword({
         userId: Number(row.id),
       });
       messageAlert({ message: "密码重置成功" });
@@ -175,7 +175,7 @@ const dataInfo: any = reactive({
     this.actionLoading = true;
     try {
       await messageConfirm(`确认删除用户"${row.fullName || row.userName}"吗？`);
-      await requests.users.delete({
+      await $apis.users.delete({
         userId: Number(row.id),
       });
       messageAlert({ message: "用户删除成功" });
