@@ -7,9 +7,10 @@ export const dictStore = {
     { value: 1, label: '停用', type: 'danger' },
   ],
   menuTypeList: [
-    { value: "M", label: '目录', type: 'success' },
-    { value: "C", label: '菜单', type: 'defaule' },
-    { value: "B", label: '按钮', type: 'info' },
+    { value: "DIR", label: '目录', type: 'success' },
+    { value: "MENU", label: '菜单', type: 'primary' },
+    { value: "PAGE", label: '页面', type: 'warning' },
+    { value: "BTN", label: '按钮', type: 'info' },
   ],
   booleanSuccessList: [
     { value: true, label: '成功', type: 'success' },

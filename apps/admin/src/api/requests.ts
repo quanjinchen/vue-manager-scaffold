@@ -86,6 +86,11 @@ export const $apis = {
     tree(params: RequestParams = {}) {
       return appRequest.post('/api/menu/list-all-menu-tree', params);
     },
+    detail(params: RequestParams = {}) {
+      return appRequest.get('/api/menu/get-menu-by-id', params, {
+        appendPathOnGet: true,
+      });
+    },
     save(params: RequestParams = {}) {
       return appRequest.post('/api/menu/create-menu', params);
     },
@@ -94,11 +99,6 @@ export const $apis = {
     },
     delete(params: RequestParams = {}) {
       return appRequest.post('/api/menu/delete-menu', params);
-    },
-    detail(params: RequestParams = {}) {
-      return appRequest.get('/api/menu/detail', params, {
-        appendPathOnGet: true,
-      });
     }
   },
   roles: {

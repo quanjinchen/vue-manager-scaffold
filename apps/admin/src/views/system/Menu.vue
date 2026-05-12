@@ -8,7 +8,6 @@
               v-model="searchParams.menuName"
               placeholder="菜单名称"
               :icon-props="{ place: 'suffix', name: 'Search' }"
-              @input="dataInfo.debounceSearch()"
             />
           </el-col>
           <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
@@ -16,7 +15,6 @@
               v-model="searchParams.path"
               placeholder="路由路径"
               :icon-props="{ place: 'suffix', name: 'Search' }"
-              @input="dataInfo.debounceSearch()"
             />
           </el-col>
           <el-col :xs="12" :sm="12" :md="6" :lg="5" :xl="4">
@@ -24,12 +22,14 @@
               v-model="searchParams.menuCode"
               placeholder="权限编码"
               :icon-props="{ place: 'suffix', name: 'Search' }"
-              @input="dataInfo.debounceSearch()"
             />
           </el-col>
           <el-col :xs="24" :sm="24" :md="6" :lg="9" :xl="12">
             <div class="header-handle">
-              <AppButton :button-props="{ loading }" @click="dataInfo.refreshPageData()">
+              <AppButton
+                :button-props="{ loading }"
+                @click="dataInfo.refreshPageData()"
+              >
                 刷新
               </AppButton>
               <AppButton
@@ -49,7 +49,7 @@
           data: filteredMenus,
           rowKey: 'id',
           treeProps: { children: 'children' },
-          defaultExpandAll: true
+          defaultExpandAll: true,
         }"
         :table-info="tableInfo"
         :loading="loading"
@@ -67,32 +67,19 @@
 </template>
 
 <script setup lang="ts" name="Menu">
-import { computed, reactive, toRefs } from 'vue';
-import { debounce, messageAlert, messageConfirm } from '@vue-scaffold/utils';
-import MenuFormDialog from '@/views/system/components/MenuFormDialog.vue';
-import tableInfo from '@/views/system/tables/Menu';
-import { $apis } from '@/api/requests';
-import type { MenuRecord } from '@/types/domain';
-
-type MenuTreeItem = {
-  id: number | string;
-  parentId?: number | string | null;
-  menuType?: string;
-  name?: string;
-  path?: string;
-  permissionCode?: string;
-  sortOrder?: number;
-  visible?: number | boolean;
-  remark?: string;
-  children?: MenuTreeItem[];
-};
+import { computed, reactive, toRefs } from "vue";
+import { messageAlert, messageConfirm } from "@vue-scaffold/utils";
+import MenuFormDialog from "@/views/system/components/MenuFormDialog.vue";
+import tableInfo from "@/views/system/tables/Menu";
+import { $apis } from "@/api/requests";
+import type { MenuRecord } from "@/types/domain";
 
 const dataInfo = reactive({
   list: [] as MenuRecord[],
   searchParams: {
-    menuName: '',
-    path: '',
-    menuCode: '',
+    menuName: "",
+    path: "",
+    menuCode: "",
   },
   dialogVisible: false,
   selectedRecord: null as MenuRecord | null,
@@ -101,10 +88,8 @@ const dataInfo = reactive({
   async getList() {
     this.loading = true;
     try {
-      const result = await $apis.menus.tree({});
-      this.list = Array.isArray(result)
-        ? result.map((item: MenuTreeItem) => mapMenu(item))
-        : [];
+      const result = await $apis.menus.tree();
+      this.list = Array.isArray(result) ? result : [];
     } finally {
       this.loading = false;
     }
@@ -117,24 +102,19 @@ const dataInfo = reactive({
       this.loading = false;
     }
   },
-  search() {
-    return;
-  },
-  debounceSearch: debounce(function (this: any) {
-    this.search();
-  }, 300),
+
   openCreate() {
     this.selectedRecord = null;
     this.dialogVisible = true;
   },
   openCreateChild(row: MenuRecord) {
     this.selectedRecord = {
-      id: '',
+      id: "",
       parentId: row.id,
-      menuType: 'C',
-      menuName: '',
-      path: '',
-      menuCode: '',
+      menuType: "MENU",
+      menuName: "",
+      path: "",
+      menuCode: "",
       orderNum: 1,
       enabled: true,
       children: [],
@@ -149,15 +129,14 @@ const dataInfo = reactive({
     if (this.actionLoading) {
       return;
     }
-
     this.actionLoading = true;
     try {
       await messageConfirm(`确认删除菜单“${row.menuName}”吗？`);
       await $apis.menus.delete({
         menuId: Number(row.id),
       });
-      messageAlert({ message: '菜单删除成功' });
-      await this.getList();
+      messageAlert({ message: "菜单删除成功" });
+      this.getList();
     } finally {
       this.actionLoading = false;
     }
@@ -189,52 +168,18 @@ const filteredMenus = computed(() => {
     return dataInfo.list;
   }
 
-  return filterMenuTree(dataInfo.list, item => {
+  return filterMenuTree(dataInfo.list, (item) => {
     const menuName = item.menuName.toLowerCase();
     const path = item.path.toLowerCase();
     const menuCode = item.menuCode.toLowerCase();
-    const matchMenuName = !menuNameKeyword || menuName.includes(menuNameKeyword);
+    const matchMenuName =
+      !menuNameKeyword || menuName.includes(menuNameKeyword);
     const matchPath = !pathKeyword || path.includes(pathKeyword);
-    const matchMenuCode = !menuCodeKeyword || menuCode.includes(menuCodeKeyword);
+    const matchMenuCode =
+      !menuCodeKeyword || menuCode.includes(menuCodeKeyword);
     return matchMenuName && matchPath && matchMenuCode;
   });
 });
-
-function mapMenuType(menuType?: string | number): 'M' | 'C' | 'B' {
-  const typeStr = String(menuType ?? '').toUpperCase();
-  if (typeStr === 'M' || typeStr === 'C' || typeStr === 'B') {
-    return typeStr as 'M' | 'C' | 'B';
-  }
-
-  switch (Number(menuType)) {
-    case 1:
-      return 'M';
-    case 2:
-    case 3:
-      return 'C';
-    case 4:
-      return 'B';
-    default:
-      return 'C';
-  }
-}
-
-function mapMenu(item: MenuTreeItem): MenuRecord {
-  return {
-    id: String(item.id),
-    parentId:
-      item.parentId === null || item.parentId === undefined
-        ? null
-        : String(item.parentId),
-    menuType: mapMenuType(item.menuType),
-    menuName: item.name ?? '',
-    path: item.path ?? '',
-    menuCode: item.permissionCode ?? '',
-    orderNum: Number(item.sortOrder ?? 1),
-    enabled: item.visible !== false && Number(item.visible ?? 1) !== 0,
-    children: Array.isArray(item.children) ? item.children.map(mapMenu) : [],
-  };
-}
 
 function filterMenuTree(
   items: MenuRecord[],

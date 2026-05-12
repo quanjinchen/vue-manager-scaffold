@@ -81,7 +81,7 @@ type RolePageItem = {
 
 type MenuTreeItem = {
   id: number | string;
-  name?: string;
+  menuName?: string;
   path?: string;
   children?: MenuTreeItem[];
 };
@@ -223,7 +223,7 @@ function mapRole(item: RolePageItem): RoleRecord {
 function mapMenuTree(item: MenuTreeItem): GrantMenuTreeNode {
   return {
     id: String(item.id),
-    label: item.path ? `${item.name ?? ''} (${item.path})` : (item.name ?? ''),
+    label: item.path ? `${item.menuName ?? ''} (${item.path})` : (item.menuName ?? ''),
     children: Array.isArray(item.children) ? item.children.map(mapMenuTree) : [],
   };
 }

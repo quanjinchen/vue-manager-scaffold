@@ -23,9 +23,10 @@ export type OrganizationRecord = {
 export type MenuRecord = {
   id: string;
   parentId: string | null;
-  menuType: 'M' | 'C' | 'B';
+  menuType: 'DIR' | 'MENU' | 'PAGE' | 'BTN';
   menuName: string;
   path: string;
+  icon?: string;
   menuCode: string;
   orderNum: number;
   enabled: boolean;

@@ -58,6 +58,11 @@
             <AppInput v-model="formData.path" v-trim placeholder="请输入路径" />
           </el-form-item>
         </el-col>
+          <el-col :span="12">
+          <el-form-item label="图标" prop="icon">
+            <IconSelector v-model="formData.icon" />
+          </el-form-item>
+        </el-col>
         <el-col :span="12">
           <el-form-item label="权限编码" prop="menuCode">
             <AppInput v-model="formData.menuCode" v-trim placeholder="请输入权限编码" />
@@ -80,6 +85,7 @@ import { dictStore } from '@vue-scaffold/constants';
 import { messageAlert, useVModel } from '@vue-scaffold/utils';
 import { $apis } from '@/api/requests';
 import type { MenuRecord } from '@/types/domain';
+import IconSelector from './IconSelector.vue';
 
 type MenuFormData = Omit<MenuRecord, 'id' | 'children'>;
 
@@ -119,9 +125,10 @@ const menuTree = computed(() => props.menus ?? []);
 const dataInfo = reactive({
   formData: {
     parentId: null,
-    menuType: 'C',
+    menuType: 'MENU',
     menuName: '',
     path: '',
+    icon: '',
     menuCode: '',
     orderNum: 1,
     enabled: true,
@@ -140,12 +147,13 @@ const dataInfo = reactive({
   initForm() {
     this.formData = {
       parentId: null,
-      menuType: 'C',
+      menuType: 'MENU',
       menuName: '',
       path: '',
+    icon: '',
       menuCode: '',
-      orderNum: 1,
-      enabled: true,
+    orderNum: 1,
+    enabled: true,
     };
     formRef.value?.clearValidate();
   },
@@ -172,10 +180,11 @@ const dataInfo = reactive({
       id: this.isEdit ? Number(props.selectItem?.id) : undefined,
       parentId: this.formData.parentId ? Number(this.formData.parentId) : 0,
       menuType: this.formData.menuType,
-      name: this.formData.menuName,
+      menuName: this.formData.menuName,
       path: this.formData.path,
-      permissionCode: this.formData.menuCode,
-      sortOrder: this.formData.orderNum,
+      icon: this.formData.icon,
+      menuCode: this.formData.menuCode,
+      orderNum: this.formData.orderNum,
       visible: this.formData.enabled,
     };
   },
@@ -209,22 +218,22 @@ watch(visible, value => {
   dataInfo.getDetail();
 });
 
-function mapMenuType(menuType?: string | number): 'M' | 'C' | 'B' {
+function mapMenuType(menuType?: string | number): 'DIR' | 'MENU' | 'PAGE' | 'BTN' {
   const typeStr = String(menuType ?? '').toUpperCase();
-  if (typeStr === 'M' || typeStr === 'C' || typeStr === 'B') {
-    return typeStr as 'M' | 'C' | 'B';
+  if (typeStr === 'DIR' || typeStr === 'MENU' || typeStr === 'PAGE' || typeStr === 'BTN') {
+    return typeStr as 'DIR' | 'MENU' | 'PAGE' | 'BTN';
   }
 
-  switch (Number(menuType)) {
-    case 1:
-      return 'M';
-    case 2:
-    case 3:
-      return 'C';
-    case 4:
-      return 'B';
+  // 兼容旧数据
+  switch (String(menuType).toUpperCase()) {
+    case 'M':
+      return 'DIR';
+    case 'C':
+      return 'MENU';
+    case 'B':
+      return 'BTN';
     default:
-      return 'C';
+      return 'MENU';
   }
 }
 
@@ -235,10 +244,11 @@ function mapMenuDetail(detail: Record<string, any>): MenuFormData {
         ? null
         : String(detail.parentId),
     menuType: mapMenuType(detail.menuType),
-    menuName: detail.name ?? detail.menuName ?? '',
+    menuName: detail.menuName ?? detail.name ?? '',
     path: detail.path ?? '',
-    menuCode: detail.permissionCode ?? detail.menuCode ?? '',
-    orderNum: Number(detail.sortOrder ?? detail.orderNum ?? 1),
+    icon: detail.icon ?? '',
+    menuCode: detail.menuCode ?? detail.permissionCode ?? '',
+    orderNum: Number(detail.orderNum ?? detail.sortOrder ?? 1),
     enabled: detail.visible !== false && Number(detail.visible ?? 1) !== 0,
   };
 }
