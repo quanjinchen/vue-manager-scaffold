@@ -10,8 +10,7 @@ export default {
       label: '结果',
       genre: '$tag',
       width: 120,
-      tagText: (row: Record<string, any>) => row.successFlag ? '成功' : '失败',
-      tagType: (row: Record<string, any>) => row.successFlag ? 'success' : 'danger',
+      dictKey: "booleanSuccessList"
     },
     { prop: 'requestTime', label: '操作时间', genre: '$date', minWidth: 180 },
   ],

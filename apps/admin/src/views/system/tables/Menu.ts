@@ -9,8 +9,9 @@ export default {
     {
       prop: 'menuType',
       label: '类型',
+      genre: "$tag",
       width: 100,
-      tagText: (row: MenuRecord) => ({ M: '目录', C: '菜单', B: '按钮' }[row.menuType] || '菜单'),
+      dictKey: "menuTypeList",
     },
     {
       key: 'actions',
