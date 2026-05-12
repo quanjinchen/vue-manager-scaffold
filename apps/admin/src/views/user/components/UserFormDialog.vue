@@ -58,6 +58,35 @@
           </el-form-item>
         </el-col>
         <el-col :span="24">
+          <el-form-item label="人脸图片">
+            <div class="face-upload">
+              <div v-if="dataInfo.facePreviewUrl" class="face-preview">
+                <AppImage
+                  :src="dataInfo.facePreviewUrl"
+                  :image-props="{ previewSrcList: [dataInfo.facePreviewUrl] }"
+                />
+              </div>
+              <div class="face-actions">
+                <input
+                  ref="fileInputRef"
+                  type="file"
+                  accept="image/*"
+                  class="face-file-input"
+                  @change="dataInfo.handleFaceFileChange"
+                />
+                <AppButton @click="dataInfo.openFaceFilePicker()">选择图片</AppButton>
+                <AppButton
+                  v-if="dataInfo.facePreviewUrl || formData.faceFileId"
+                  :button-props="{ type: 'danger', plain: true }"
+                  @click="dataInfo.clearFaceFile()"
+                >
+                  清除图片
+                </AppButton>
+              </div>
+            </div>
+          </el-form-item>
+        </el-col>
+        <el-col :span="24">
           <el-form-item label="备注" prop="remark">
             <AppInput
               v-model="formData.remark"
@@ -72,7 +101,7 @@
 </template>
 
 <script setup lang="ts" name="UserFormDialog">
-import { computed, reactive, ref, watch, toRefs } from "vue";
+import { computed, reactive, ref, watch, toRefs, onBeforeUnmount } from "vue";
 import type { FormInstance } from "element-plus";
 import { messageAlert, useVModel } from "@vue-scaffold/utils";
 import { $apis } from "@/api/requests";
@@ -90,7 +119,17 @@ const emit = defineEmits<{
 }>();
 
 const formRef = ref<FormInstance>();
+const fileInputRef = ref<HTMLInputElement>();
 const visible = useVModel(props, emit as any);
+
+function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("read file failed"));
+    reader.readAsDataURL(file);
+  });
+}
 
 const modalProps = computed(() => ({
   title: `${dataInfo.isEdit ? "编辑" : "新增"}用户`,
@@ -122,6 +161,7 @@ const dataInfo: any = reactive({
     fullName: "",
     phone: "",
     email: "",
+    faceFileId: "",
     status: "",
     remark: "",
   },
@@ -134,6 +174,9 @@ const dataInfo: any = reactive({
   },
   submitLoading: false,
   loading: false,
+  facePreviewUrl: "",
+  faceFile: null as File | null,
+  faceChanged: false,
   // 是否编辑模式
   get isEdit() {
     return Boolean(props.selectItem?.id);
@@ -142,6 +185,43 @@ const dataInfo: any = reactive({
   initForm() {
     formRef.value?.resetFields();
     formRef.value?.clearValidate();
+    this.revokeFacePreviewUrl();
+    this.facePreviewUrl = "";
+    this.faceFile = null;
+    this.faceChanged = false;
+    if (fileInputRef.value) {
+      fileInputRef.value.value = "";
+    }
+  },
+  revokeFacePreviewUrl() {
+    if (this.facePreviewUrl?.startsWith?.("blob:")) {
+      URL.revokeObjectURL(this.facePreviewUrl);
+    }
+  },
+  openFaceFilePicker() {
+    fileInputRef.value?.click();
+  },
+  handleFaceFileChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (!file) {
+      return;
+    }
+    this.revokeFacePreviewUrl();
+    this.faceFile = file;
+    this.faceChanged = true;
+    this.formData.faceFileId = "";
+    this.facePreviewUrl = URL.createObjectURL(file);
+  },
+  clearFaceFile() {
+    this.revokeFacePreviewUrl();
+    this.faceFile = null;
+    this.faceChanged = true;
+    this.facePreviewUrl = "";
+    this.formData.faceFileId = "";
+    if (fileInputRef.value) {
+      fileInputRef.value.value = "";
+    }
   },
   async getDetail() {
     if (!props.selectItem?.id) {
@@ -156,12 +236,33 @@ const dataInfo: any = reactive({
       this.formData = {
         ...detail,
       };
+      this.faceFile = null;
+      this.faceChanged = false;
+      this.revokeFacePreviewUrl();
+      this.facePreviewUrl = "";
+      if (detail?.faceFileId) {
+        try {
+          const fileBlob = await $apis.files.download(detail.faceFileId, {
+            alertError: false,
+          });
+          const blobData = fileBlob?.data instanceof Blob ? fileBlob.data : null;
+          this.facePreviewUrl = blobData ? URL.createObjectURL(blobData) : "";
+        } catch {
+          this.facePreviewUrl = "";
+        }
+      }
     } finally {
       this.loading = false;
     }
   },
   get params() {
-    return { ...dataInfo.formData };
+    const params: Record<string, any> = { ...dataInfo.formData };
+    if (!dataInfo.faceChanged) {
+      delete params.faceFileId;
+      return params;
+    }
+    params.faceFileId = dataInfo.formData.faceFileId || null;
+    return params;
   },
   // 提交表单
   async handleSubmit() {
@@ -169,8 +270,12 @@ const dataInfo: any = reactive({
     if (this.submitLoading) return;
     this.submitLoading = true;
     try {
+      const params = this.params;
+      if (this.faceChanged && this.faceFile) {
+        params.faceBase64 = await fileToDataUrl(this.faceFile);
+      }
       await $apis.users[this.isEdit ? "update" : "create"]({
-        ...this.params,
+        ...params,
       });
       messageAlert({ message: `操作成功` });
       visible.value = false;
@@ -183,6 +288,38 @@ const dataInfo: any = reactive({
 
 const { submitLoading, loading, formData } = toRefs(dataInfo);
 
+onBeforeUnmount(() => {
+  dataInfo.revokeFacePreviewUrl();
+});
+
 // 暴露
 defineExpose({ dataInfo });
 </script>
+
+<style scoped lang="scss">
+.face-upload {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.face-preview {
+  width: 120px;
+  height: 120px;
+  overflow: hidden;
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  background: #f5f7fa;
+  flex-shrink: 0;
+}
+
+.face-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.face-file-input {
+  display: none;
+}
+</style>

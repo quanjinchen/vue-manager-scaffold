@@ -49,6 +49,20 @@ export const $apis = {
       return appRequest.post('/api/user/reset-user-password', params);
     }
   },
+  files: {
+    upload(data: RequestParams = {}) {
+      return appRequest.upload('/api/file/upload-file', data);
+    },
+    downloadUrl(fileId: string | number) {
+      return `/api/file/download-file/${fileId}`;
+    },
+    download(fileId: string | number, options: AppRequestMethodOptions = {}) {
+      return appRequest.download(`/api/file/download-file/${fileId}`, {}, {
+        responseReturn: 'raw',
+        ...options,
+      });
+    }
+  },
   organizations: {
     tree(params: RequestParams = {}) {
       return appRequest.post('/api/org/list-all-org-tree', params);

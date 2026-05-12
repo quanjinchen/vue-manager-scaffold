@@ -4,6 +4,7 @@ export type UserRecord = {
   fullName: string;
   phone: string;
   email: string;
+  faceFileId?: string;
   orgId?: string | number | null;
   status: number | string;
   remark?: string;
