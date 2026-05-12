@@ -10,6 +10,17 @@ export type UserRecord = {
   remark?: string;
 };
 
+export type AppRecord = {
+  id: string;
+  appName: string;
+  appCode: string;
+  clientId: string;
+  clientSecret: string;
+  remark?: string;
+  createTime?: string;
+  updateTime?: string;
+};
+
 export type OrganizationRecord = {
   id: string;
   parentId: string | null;

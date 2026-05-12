@@ -49,6 +49,25 @@ export const $apis = {
       return appRequest.post('/api/user/reset-user-password', params);
     }
   },
+  apps: {
+    list(params: RequestParams = {}) {
+      return appRequest.post('/api/app/list-app', params);
+    },
+    detail(params: RequestParams = {}) {
+      return appRequest.get('/api/app/get-app-by-id', params, {
+        appendPathOnGet: true,
+      });
+    },
+    create(params: RequestParams = {}) {
+      return appRequest.post('/api/app/create-app', params);
+    },
+    update(params: RequestParams = {}) {
+      return appRequest.post('/api/app/update-app', params);
+    },
+    delete(params: RequestParams = {}) {
+      return appRequest.post('/api/app/delete-app', params);
+    }
+  },
   files: {
     upload(data: RequestParams = {}) {
       return appRequest.upload('/api/file/upload-file', data);

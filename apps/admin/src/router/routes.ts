@@ -8,6 +8,7 @@ import OperationLog from '@/views/system/OperationLog.vue';
 import Organization from '@/views/organization/Organization.vue';
 import User from '@/views/user/User.vue';
 import Role from '@/views/system/Role.vue';
+import Application from '@/views/application/Application.vue';
 
 // 固定路由：无论是否登录、是否有权限都需要提前存在的页面。
 export const constantRoutes: RouteRecordRaw[] = [
@@ -71,6 +72,16 @@ export const localRoutes: RouteRecordRaw[] = [
       title: '组织管理',
       icon: 'Document',
       permissions: 'system:org:query'
+    }
+  },
+  {
+    path: '/application',
+    name: 'application',
+    component: Application,
+    meta: {
+      title: '应用管理',
+      icon: 'Grid',
+      permissions: 'system:app:query'
     }
   },
   {
