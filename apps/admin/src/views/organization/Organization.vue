@@ -88,7 +88,7 @@ type OrgTreeItem = {
 type UserPageItem = {
   id: number | string;
   username?: string;
-  nickname?: string;
+  fullName?: string;
 };
 
 type OrgUserInfo = {
@@ -149,7 +149,10 @@ const dataInfo = reactive({
         $apis.users.list({
           pageNum: 1,
           pageSize: 100,
-          keyword: '',
+          username: '',
+          fullName: '',
+          phone: '',
+          email: '',
         }),
         $apis.orgUsers.list({
           orgId: Number(row.id),
@@ -242,7 +245,7 @@ function mapOrganization(item: OrgTreeItem): OrganizationRecord {
 function mapUserOption(item: UserPageItem): GrantUserOption {
   return {
     id: String(item.id),
-    name: item.nickname || item.username || '',
+    name: item.fullName || item.username || '',
   };
 }
 

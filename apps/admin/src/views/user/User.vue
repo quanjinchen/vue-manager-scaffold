@@ -158,7 +158,7 @@ const dataInfo: any = reactive({
     this.actionLoading = true;
     try {
       await messageConfirm(
-        `确认重置用户"${row.fullName || row.userName}"的密码吗？`,
+        `确认重置用户"${row.fullName || row.username}"的密码吗？`,
       );
       await $apis.users.resetPassword({
         userId: Number(row.id),
@@ -174,7 +174,7 @@ const dataInfo: any = reactive({
   async deleteUser(row: UserRecord) {
     this.actionLoading = true;
     try {
-      await messageConfirm(`确认删除用户"${row.fullName || row.userName}"吗？`);
+      await messageConfirm(`确认删除用户"${row.fullName || row.username}"吗？`);
       await $apis.users.delete({
         userId: Number(row.id),
       });

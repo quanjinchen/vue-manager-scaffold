@@ -379,7 +379,10 @@
       {
         pageNum: 1,
         pageSize: 1000,
-        keyword: ''
+        username: '',
+        fullName: '',
+        phone: '',
+        email: ''
       },
       {
         alertError: false,

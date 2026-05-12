@@ -109,7 +109,6 @@
     userId?: string | number;
     username?: string;
     userName?: string;
-    nickname?: string;
     fullName?: string;
     email?: string;
     menuList?: Record<string, any>[];
@@ -221,7 +220,7 @@
       token,
       profile: {
         id: String(rawLoginInfo.profile?.id ?? userInfo.adminId ?? userInfo.userId ?? userInfo.id ?? '1'),
-        name: String(rawLoginInfo.profile?.name ?? userInfo.nickname ?? userInfo.username ?? userInfo.userName ?? userInfo.fullName ?? params.account),
+        name: String(rawLoginInfo.profile?.name ?? userInfo.fullName ?? userInfo.username ?? userInfo.userName ?? params.account),
         email: String(rawLoginInfo.profile?.email ?? userInfo.email ?? '')
       },
       permissions,

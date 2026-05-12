@@ -1,14 +1,11 @@
 export type UserRecord = {
   id: string;
-  userName: string;
+  username: string;
   fullName: string;
-  phoneNum: string;
+  phone: string;
   email: string;
-  orgIds: string[];
-  orgNames: string[];
-  status: 'active' | 'disabled';
-  createdAt: string;
-  updatedAt: string;
+  orgId?: string | number | null;
+  status: number | string;
   remark?: string;
 };
 
