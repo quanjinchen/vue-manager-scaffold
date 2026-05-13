@@ -90,6 +90,8 @@ import IconSelector from './IconSelector.vue';
 
 type MenuFormData = Omit<MenuRecord, 'id' | 'children'>;
 
+const ROOT_MENU_ID = '0';
+
 const props = defineProps<{
   modelValue: boolean;
   selectItem?: MenuRecord | null;
@@ -121,11 +123,24 @@ const footerProps = computed(() => ({
   ],
 }));
 
-const menuTree = computed(() => props.menus ?? []);
+const menuTree = computed(() => [
+  {
+    id: ROOT_MENU_ID,
+    parentId: null,
+    menuType: 'DIR' as const,
+    menuName: '根级菜单',
+    path: '',
+    icon: '',
+    menuCode: '',
+    orderNum: 0,
+    enabled: true,
+    children: filterAvailableMenus(props.menus ?? [], props.selectItem?.id),
+  },
+]);
 
 const dataInfo = reactive({
   formData: {
-    parentId: null,
+    parentId: ROOT_MENU_ID,
     menuType: 'MENU',
     menuName: '',
     path: '',
@@ -147,21 +162,21 @@ const dataInfo = reactive({
   },
   initForm() {
     this.formData = {
-      parentId: null,
+      parentId: ROOT_MENU_ID,
       menuType: 'MENU',
       menuName: '',
       path: '',
-    icon: '',
+      icon: '',
       menuCode: '',
-    orderNum: 1,
-    enabled: true,
+      orderNum: 1,
+      enabled: true,
     };
     formRef.value?.clearValidate();
   },
   async getDetail() {
     if (!props.selectItem?.id) {
-      if (props.selectItem?.parentId) {
-        this.formData.parentId = props.selectItem.parentId;
+      if (props.selectItem?.parentId !== undefined && props.selectItem?.parentId !== null) {
+        this.formData.parentId = String(props.selectItem.parentId);
       }
       return;
     }
@@ -179,7 +194,13 @@ const dataInfo = reactive({
   get params() {
     return {
       id: this.isEdit ? Number(props.selectItem?.id) : undefined,
-      parentId: this.formData.parentId ? Number(this.formData.parentId) : 0,
+      parentId:
+        this.formData.parentId === null ||
+        this.formData.parentId === undefined ||
+        this.formData.parentId === '' ||
+        String(this.formData.parentId) === ROOT_MENU_ID
+          ? 0
+          : Number(this.formData.parentId),
       menuType: this.formData.menuType,
       menuName: this.formData.menuName,
       path: this.formData.path,
@@ -222,8 +243,8 @@ watch(visible, value => {
 function mapMenuDetail(detail: Record<string, any>): MenuFormData {
   return {
     parentId:
-      detail.parentId === null || detail.parentId === undefined
-        ? null
+      detail.parentId === null || detail.parentId === undefined || Number(detail.parentId) === 0
+        ? ROOT_MENU_ID
         : String(detail.parentId),
     menuType: normalizeMenuType(detail.menuType),
     menuName: detail.menuName ?? detail.name ?? '',
@@ -233,6 +254,21 @@ function mapMenuDetail(detail: Record<string, any>): MenuFormData {
     orderNum: Number(detail.orderNum ?? detail.sortOrder ?? 1),
     enabled: detail.visible !== false && Number(detail.visible ?? 1) !== 0,
   };
+}
+
+function filterAvailableMenus(items: MenuRecord[], currentId?: string) {
+  return items.reduce<MenuRecord[]>((result, item) => {
+    if (currentId && String(item.id) === String(currentId)) {
+      return result;
+    }
+    result.push({
+      ...item,
+      id: String(item.id),
+      parentId: item.parentId === null || item.parentId === undefined ? null : String(item.parentId),
+      children: filterAvailableMenus(item.children ?? [], currentId),
+    });
+    return result;
+  }, []);
 }
 
 const { formData, loading, submitLoading } = toRefs(dataInfo);
