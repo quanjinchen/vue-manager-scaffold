@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts" name="AppSelectV2">
-  import { computed } from 'vue';
+  import { computed, useAttrs } from 'vue';
   import { useVModel, deepMerge } from '@vue-scaffold/utils';
 
   defineOptions({ inheritAttrs: false });
@@ -25,6 +25,7 @@
 
   const emit = defineEmits(['update:modelValue']);
 
+  const attrs = useAttrs();
   const model = useVModel(props, emit);
   const options = computed(() => props.list.map((item: any) => ({ label: item.name, value: item.id, ...item })));
   const selectPropsResult = computed(() =>
@@ -33,6 +34,7 @@
         style: 'width: 100%',
         clearable: true
       },
+      attrs as Record<string, any>,
       props.selectV2Props
     )
   );

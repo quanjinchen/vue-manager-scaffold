@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts" name="AppSelect">
-  import { computed } from 'vue';
+  import { computed, useAttrs } from 'vue';
   import { useVModel, deepMerge } from '@vue-scaffold/utils';
 
   defineOptions({ inheritAttrs: false });
@@ -27,6 +27,7 @@
 
   const emit = defineEmits(['update:modelValue']);
 
+  const attrs = useAttrs();
   const model = useVModel(props, emit);
   const selectPropsResult = computed(() =>
     deepMerge(
@@ -34,6 +35,7 @@
         style: 'width: 100%',
         clearable: true
       },
+      attrs as Record<string, any>,
       props.selectProps
     )
   );

@@ -22,6 +22,19 @@ export type AppRecord = {
   updateTime?: string;
 };
 
+export type FaceAuthLogRecord = {
+  id: string | number;
+  authApiType?: number | string;
+  ip?: string;
+  appId?: string | number | null;
+  appName?: string;
+  authFullName?: string;
+  authUserId?: string | number | null;
+  status?: number | string;
+  errmsg?: string;
+  createTime?: string;
+};
+
 export type OrganizationRecord = {
   id: string;
   parentId: string | null;

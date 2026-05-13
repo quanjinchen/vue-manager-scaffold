@@ -4,6 +4,7 @@ import AdminLayout from '@/layouts/AdminLayout.vue';
 import Login from '@/views/login/Login.vue';
 import Dashboard from '@/views/dashboard/Dashboard.vue';
 import Menu from '@/views/system/Menu.vue';
+import FaceAuthLog from '@/views/system/FaceAuthLog.vue';
 import OperationLog from '@/views/system/OperationLog.vue';
 import Organization from '@/views/organization/Organization.vue';
 import User from '@/views/user/User.vue';
@@ -50,6 +51,16 @@ export const localRoutes: RouteRecordRaw[] = [
     component: OperationLog,
     meta: {
       title: '日志审计',
+      icon: 'Document',
+      permissions: 'system:operationLog:query'
+    }
+  },
+  {
+    path: '/system/face-auth-log',
+    name: 'system-face-auth-log',
+    component: FaceAuthLog,
+    meta: {
+      title: '人脸认证日志',
       icon: 'Document',
       permissions: 'system:operationLog:query'
     }
