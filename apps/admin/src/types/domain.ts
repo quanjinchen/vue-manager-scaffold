@@ -3,6 +3,7 @@ export type UserRecord = {
   username: string;
   fullName: string;
   phone: string;
+  idCard?: string;
   email: string;
   faceFileId?: string;
   orgId?: string | number | null;

@@ -1,4 +1,3 @@
-import type { AppRecord } from '@/types/domain';
 
 export default {
   columns: [

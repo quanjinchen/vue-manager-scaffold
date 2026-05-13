@@ -22,6 +22,11 @@ export default {
       minWidth: 160
     },
     {
+      prop: 'idCard',
+      label: '身份证号',
+      minWidth: 220
+    },
+    {
       prop: 'email',
       label: '邮箱',
       minWidth: 220

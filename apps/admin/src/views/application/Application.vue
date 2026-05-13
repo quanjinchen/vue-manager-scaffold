@@ -84,7 +84,7 @@ const dataInfo = reactive({
     this.loading = true;
     try {
       const result = await $apis.apps.list(this.params);
-      this.list = result;
+      this.list = result.records;
       this.total = Number(result?.total ?? 0);
     } finally {
       this.loading = false;

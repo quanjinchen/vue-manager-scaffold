@@ -49,6 +49,15 @@
           </el-form-item>
         </el-col>
         <el-col :span="12">
+          <el-form-item label="身份证号" prop="idCard">
+            <AppInput
+              v-model="formData.idCard"
+              v-trim
+              placeholder="请输入身份证号"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
           <el-form-item label="状态" prop="status">
             <AppSelect
               v-model="formData.status"
@@ -161,6 +170,7 @@ const dataInfo: any = reactive({
     fullName: "",
     phone: "",
     email: "",
+    idCard: "",
     faceFileId: "",
     status: "",
     remark: "",
@@ -234,6 +244,14 @@ const dataInfo: any = reactive({
         id: Number(props.selectItem.id),
       });
       this.formData = {
+        username: "",
+        fullName: "",
+        phone: "",
+        email: "",
+        idCard: "",
+        faceFileId: "",
+        status: "",
+        remark: "",
         ...detail,
       };
       this.faceFile = null;
