@@ -10,10 +10,10 @@ export interface PageInfo {
 }
 
 export interface AccessMenuItem {
-  name: string;
+  menuName: string;
   path: string;
-  menuType?: 1 | 2 | 3 | 4;
+  menuType?: "DIR" | "MENU" | "PAGE" | "BTN";
   icon?: string;
-  permissions?: string | string[];
+  menuCode?: string | string[];
   children?: AccessMenuItem[];
 }

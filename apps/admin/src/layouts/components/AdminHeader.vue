@@ -2,7 +2,7 @@
   <el-header class="AdminHeader-root">
     <div class="left"></div>
     <div class="right">
-      <span class="welcome">你好，{{ authStore.profile.name || "未登录用户" }}</span>
+      <span class="welcome">你好，{{ authStore.userInfo.fullName || "未登录用户" }}</span>
       <AppButton @click="logout">退出登录</AppButton>
     </div>
   </el-header>

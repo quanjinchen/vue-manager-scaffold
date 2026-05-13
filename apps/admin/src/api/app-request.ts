@@ -105,7 +105,7 @@ function buildRequestHeaders(
   defaultContentType = 'application/json'
 ) {
   const token = needLogin ? readStorage<string>('token', '') : '';
-
+  console.log({token})
   return {
     ...(defaultContentType
       ? {

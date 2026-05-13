@@ -64,6 +64,7 @@
   import type { AccessMenuItem } from '@vue-scaffold/types';
   import { $apis } from '@/api/requests';
   import { useMenuStore } from '@/stores';
+  import { MENU_TYPE_MENU, MENU_TYPE_PAGE, normalizeMenuType } from '@/types/menu';
   import BaseStatsCard from '@/views/dashboard/components/BaseStatsCard.vue';
   import TrendChartCard from '@/views/dashboard/components/TrendChartCard.vue';
   import RankListCard from '@/views/dashboard/components/RankListCard.vue';
@@ -314,7 +315,10 @@
 
   function buildCards(users: UserItem[], logs: OperationLogItem[], menuList: AccessMenuItem[]): DashboardCardItem[] {
     const flatMenus = flattenMenus(menuList);
-    const pageCount = flatMenus.filter(item => Number(item.menuType) === 2 && item.path).length;
+    const pageCount = flatMenus.filter(item => {
+      const menuType = normalizeMenuType(item.menuType);
+      return (menuType === MENU_TYPE_MENU || menuType === MENU_TYPE_PAGE) && item.path;
+    }).length;
     const permissionCount = flatMenus.filter(item => item.permissions).length;
     const enabledUserCount = users.filter(isEnabledUser).length;
     const recentLogCount = logs.filter(item => {

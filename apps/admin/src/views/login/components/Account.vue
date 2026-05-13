@@ -50,8 +50,8 @@ const graphVerifyCodeRef = ref<InstanceType<typeof GraphVerifyCode>>();
 const dataInfo = reactive({
   form: {
     model: {
-      account: '',
-      password: '',
+      account: 'admin',
+      password: 'Admin@123',
       code: ''
     },
     rules: {

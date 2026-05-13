@@ -3,14 +3,14 @@
     <el-sub-menu v-if="item.children?.length" :index="item.path">
       <template #title>
         <AppIcon v-if="item.icon" :name="item.icon" />
-        <span>{{ item.name }}</span>
+        <span>{{ item.menuName }}</span>
       </template>
       <AppMenuItems :list="item.children" />
     </el-sub-menu>
 
     <el-menu-item v-else :index="item.path">
       <AppIcon v-if="item.icon" :name="item.icon" />
-      <span>{{ item.name }}</span>
+      <span>{{ item.menuName }}</span>
     </el-menu-item>
   </template>
 </template>

@@ -1,12 +1,14 @@
 import type { RouteRecordRaw } from 'vue-router';
 import type { AccessMenuItem } from '@vue-scaffold/types';
+import { isDirectoryMenu, normalizeMenuType } from '@/types/menu';
+
 // 递归处理菜单树，生成 path => menu 的映射表。
 export function generatePathMap(menuList: AccessMenuItem[] = []) {
   const pathMap: Record<string, AccessMenuItem> = {};
 
   const walk = (items: AccessMenuItem[]) => {
     items.forEach(item => {
-      if (item.path) {
+      if (item.path && !isDirectoryMenu(item.menuType)) {
         pathMap[item.path] = item;
       }
       if (item.children?.length) {
@@ -43,6 +45,7 @@ export function routesToMenus(routes: RouteRecordRaw[], basePath = ''): AccessMe
       return {
         name: String(route.meta?.title ?? route.name ?? path),
         path,
+        menuType: normalizeMenuType(route.children?.length ? 'DIR' : 'MENU'),
         icon: route.meta?.icon as string | undefined,
         permissions: route.meta?.permissions as string | string[] | undefined,
         children: route.children ? routesToMenus(route.children, path) : []
@@ -58,7 +61,7 @@ export function getFirstMenuPath(menuTree: AccessMenuItem[]) {
       if (childPath) {
         return childPath;
       }
-    } else if (item.path) {
+    } else if (item.path && !isDirectoryMenu(item.menuType)) {
       return item.path;
     }
   }

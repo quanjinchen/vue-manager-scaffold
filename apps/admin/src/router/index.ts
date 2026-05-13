@@ -15,7 +15,7 @@ const router = createRouter({
 // 显式执行一次权限路由注册，既可以在登录成功后主动调用，也可以在刷新后的守卫里兜底调用。
 export function ensureAccessRoutes() {
   const menuStore = useMenuStore();
-
+  console.log({menuStore})
   if (menuStore.isAddRoutes) {
     return menuStore.menuTree;
   }

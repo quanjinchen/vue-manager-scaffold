@@ -85,6 +85,7 @@ import { dictStore } from '@vue-scaffold/constants';
 import { messageAlert, useVModel } from '@vue-scaffold/utils';
 import { $apis } from '@/api/requests';
 import type { MenuRecord } from '@/types/domain';
+import { normalizeMenuType } from '@/types/menu';
 import IconSelector from './IconSelector.vue';
 
 type MenuFormData = Omit<MenuRecord, 'id' | 'children'>;
@@ -218,32 +219,13 @@ watch(visible, value => {
   dataInfo.getDetail();
 });
 
-function mapMenuType(menuType?: string | number): 'DIR' | 'MENU' | 'PAGE' | 'BTN' {
-  const typeStr = String(menuType ?? '').toUpperCase();
-  if (typeStr === 'DIR' || typeStr === 'MENU' || typeStr === 'PAGE' || typeStr === 'BTN') {
-    return typeStr as 'DIR' | 'MENU' | 'PAGE' | 'BTN';
-  }
-
-  // 兼容旧数据
-  switch (String(menuType).toUpperCase()) {
-    case 'M':
-      return 'DIR';
-    case 'C':
-      return 'MENU';
-    case 'B':
-      return 'BTN';
-    default:
-      return 'MENU';
-  }
-}
-
 function mapMenuDetail(detail: Record<string, any>): MenuFormData {
   return {
     parentId:
       detail.parentId === null || detail.parentId === undefined
         ? null
         : String(detail.parentId),
-    menuType: mapMenuType(detail.menuType),
+    menuType: normalizeMenuType(detail.menuType),
     menuName: detail.menuName ?? detail.name ?? '',
     path: detail.path ?? '',
     icon: detail.icon ?? '',

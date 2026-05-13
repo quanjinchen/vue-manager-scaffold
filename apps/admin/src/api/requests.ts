@@ -5,7 +5,7 @@ type RequestParams = Record<string, any>;
 export const $apis = {
   login: {
     accountLogin(params: RequestParams = {}) {
-      return appRequest.post('/api/admin/login', params);
+      return appRequest.post('/api/admin/login', params, { needLogin: false });
     },
     logout(params: RequestParams = {}) {
       return appRequest.post('/api/admin/logout', params);

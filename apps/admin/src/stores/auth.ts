@@ -14,7 +14,6 @@ type UserProfile = {
 
 // 登录成功后写入权限系统所需的核心数据结构。
 type AccessPayload = {
-  token: string;
   profile: UserProfile;
   permissions: string[];
 };
@@ -24,7 +23,7 @@ export const useAuthStore = defineStore(
   () => {
     // token、用户资料、权限码和菜单树共同决定当前用户能看到什么、能访问什么。
     const token = ref('');
-    const profile = ref<UserProfile>({
+    const userInfo = ref<any>({
       id: '',
       name: '',
       email: ''
@@ -35,13 +34,11 @@ export const useAuthStore = defineStore(
     const isAuthenticated = computed(() => Boolean(token.value));
 
     // 写入一次完整的登录结果，并同步到持久化存储。
-    function applyAccess(payload: AccessPayload) {
+    function applyAccess(info: AccessPayload) {
       const menuStore = useMenuStore();
-      token.value = payload.token;
-      profile.value = payload.profile;
-      permissions.value = payload.permissions;
-      writeStorage(STORAGE_KEYS.token, payload.token);
-      writeStorage(STORAGE_KEYS.permissions, payload.permissions);
+      userInfo.value = info;
+      permissions.value = info.permissions;
+      writeStorage(STORAGE_KEYS.permissions, info.permissions);
       menuStore.setIsAddRoutes(false);
     }
 
@@ -60,7 +57,7 @@ export const useAuthStore = defineStore(
       const menuStore = useMenuStore();
       token.value = '';
       permissions.value = [];
-      profile.value = { id: '', name: '', email: '' };
+      userInfo.value = { id: '', name: '', email: '' };
       removeStorage(STORAGE_KEYS.token);
       removeStorage(STORAGE_KEYS.permissions);
       menuStore.clearMenuData();
@@ -69,7 +66,7 @@ export const useAuthStore = defineStore(
     // 优先通知后端注销当前 token；即使后端请求失败，也要兜底清理前端本地登录态。
     async function logout() {
       try {
-        await $apis.login.logout({}, { alertError: false });
+        await $apis.login.logout({});
       } finally {
         clearAccess();
       }
@@ -77,7 +74,7 @@ export const useAuthStore = defineStore(
 
     return {
       token,
-      profile,
+      userInfo,
       permissions,
       isAuthenticated,
       applyAccess,
@@ -91,7 +88,7 @@ export const useAuthStore = defineStore(
       // 这些字段刷新后仍然要保留，否则用户每次刷新都要重新登录和重新建菜单。
       storage: persistedStorage,
       key: STORAGE_KEYS.profile,
-      pick: ['token', 'profile', 'permissions']
+      pick: ['token', 'userInfo', 'permissions']
     }
   }
 );

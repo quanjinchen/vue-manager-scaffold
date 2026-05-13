@@ -6,6 +6,12 @@ import { persistedStorage } from '@vue-scaffold/utils';
 import type { AccessMenuItem } from '@vue-scaffold/types';
 import { filterRoutesByMenuList } from '@/router/menu';
 import { localRoutes } from '@/router/routes';
+import {
+  isBreadcrumbMenu,
+  isDirectoryMenu,
+  isVisibleNavigationMenu,
+  normalizeMenuType
+} from '@/types/menu';
 
 export const useMenuStore = defineStore(
   'scaffold-menu',
@@ -33,15 +39,17 @@ export const useMenuStore = defineStore(
       isAddRoutes.value = false;
     }
 
-    function generateTree(filterCondition: Array<1 | 2 | 3>) {
+    function generateTree(
+      filterCondition: (menuType?: string | number) => boolean
+    ): AccessMenuItem[] {
       const generateMenusTree = (treeList: AccessMenuItem[]) =>
         treeList
           .filter(menuItem => {
-            if (!filterCondition.includes((menuItem.menuType ?? 2) as 1 | 2 | 3)) {
+            if (!filterCondition(menuItem.menuType)) {
               return false;
             }
             // 目录允许没有 path，只要下面还有可展示子节点；菜单/页面必须有 path。
-            if ((menuItem.menuType ?? 2) === 1) {
+            if (isDirectoryMenu(menuItem.menuType)) {
               return true;
             }
             return Boolean(menuItem.path);
@@ -51,7 +59,7 @@ export const useMenuStore = defineStore(
             children: menuItem.children ? generateMenusTree(menuItem.children) : undefined
           }))
           .filter(menuItem => {
-            if ((menuItem.menuType ?? 2) === 1) {
+            if (isDirectoryMenu(menuItem.menuType)) {
               return Boolean(menuItem.children?.length);
             }
             return true;
@@ -61,9 +69,9 @@ export const useMenuStore = defineStore(
     }
 
     // 左侧菜单只保留目录和菜单节点，按钮节点不参与导航展示。
-    const menuTree = computed(() => generateTree([1, 2]));
+    const menuTree = computed(() => generateTree(isVisibleNavigationMenu));
     // 面包屑允许包含页面节点。
-    const breadcrumbTree = computed(() => generateTree([1, 2, 3]));
+    const breadcrumbTree = computed(() => generateTree(isBreadcrumbMenu));
 
     return {
       menuList,
