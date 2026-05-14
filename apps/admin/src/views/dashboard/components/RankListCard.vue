@@ -14,29 +14,13 @@
       <AppEmpty />
     </div>
 
-    <ol v-else class="rank-list">
-      <li v-for="(item, index) in list" :key="item.name" class="rank-item">
-        <div class="rank-meta">
-          <span class="index">{{ index + 1 }}</span>
-          <div class="copy">
-            <strong>{{ item.name }}</strong>
-            <p>{{ unitLabel }}</p>
-          </div>
-        </div>
-        <div class="rank-main">
-          <div class="track">
-            <div class="fill" :style="{ width: `${getRatio(item.num)}%` }"></div>
-          </div>
-          <em>{{ formatStatisticNumber(item.num) }}</em>
-        </div>
-      </li>
-    </ol>
+    <EChartPanel v-else :option="chartOption" />
   </section>
 </template>
 
 <script setup lang="ts" name="RankListCard">
   import { computed } from 'vue';
-  import { formatStatisticNumber } from '@vue-scaffold/utils';
+  import EChartPanel from './EChartPanel.vue';
 
   type RankItem = {
     name: string;
@@ -66,11 +50,45 @@
     set: value => emit('change', value)
   });
 
-  const maxValue = computed(() => Math.max(...props.list.map(item => item.num), 1));
-
-  function getRatio(value: number) {
-    return Math.max((value / maxValue.value) * 100, 10);
-  }
+  const chartOption = computed(() => ({
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    grid: {
+      left: 24,
+      right: 24,
+      top: 16,
+      bottom: 24,
+      containLabel: true
+    },
+    xAxis: {
+      type: 'value',
+      splitLine: { lineStyle: { color: '#eef2f6' } },
+      axisLabel: { color: '#98a2b3' }
+    },
+    yAxis: {
+      type: 'category',
+      data: props.list.map(item => item.name),
+      axisTick: { show: false },
+      axisLine: { show: false },
+      axisLabel: { color: '#344054' }
+    },
+    series: [
+      {
+        name: props.unitLabel,
+        type: 'bar',
+        barMaxWidth: 18,
+        itemStyle: {
+          borderRadius: [0, 8, 8, 0],
+          color: '#2d6df6'
+        },
+        data: props.list.map(item => item.num)
+      }
+    ]
+  }));
 </script>
 
 <style scoped lang="scss">
@@ -105,78 +123,4 @@
     justify-content: center;
   }
 
-  .rank-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .rank-item {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-  }
-
-  .rank-meta {
-    flex: 0 0 180px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .index {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 10px;
-    background: #edf2ff;
-    color: #0041c0;
-    font-weight: 700;
-  }
-
-  .copy strong {
-    display: block;
-    color: #111827;
-  }
-
-  .copy p {
-    margin: 4px 0 0;
-    color: #98a2b3;
-    font-size: 12px;
-  }
-
-  .rank-main {
-    flex: 1;
-    display: flex;
-    gap: 12px;
-    align-items: center;
-  }
-
-  .track {
-    flex: 1;
-    height: 12px;
-    border-radius: 999px;
-    background: #eef2f7;
-    overflow: hidden;
-  }
-
-  .fill {
-    height: 100%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, #2d6df6 0%, #7aa3ff 100%);
-  }
-
-  .rank-main em {
-    font-style: normal;
-    color: #344054;
-    font-weight: 600;
-  }
-
-  @media (max-width: 860px) {
-    .rank-item {
-      grid-template-columns: 1fr;
-    }
-  }
 </style>

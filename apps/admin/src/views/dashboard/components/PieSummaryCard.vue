@@ -15,12 +15,7 @@
     </div>
 
     <div v-else class="summary-main">
-      <div class="donut-shell">
-        <div class="donut-center">
-          <span>总数</span>
-          <strong>{{ formatStatisticNumber(total) }}</strong>
-        </div>
-      </div>
+      <EChartPanel :option="chartOption" />
 
       <ul class="legend-list">
         <li v-for="item in normalizedList" :key="item.name">
@@ -41,6 +36,7 @@
 <script setup lang="ts" name="PieSummaryCard">
   import { computed } from 'vue';
   import { formatStatisticNumber } from '@vue-scaffold/utils';
+  import EChartPanel from './EChartPanel.vue';
 
   type TabItem = {
     id: string;
@@ -79,6 +75,58 @@
       percent: props.total ? Math.round((item.num / props.total) * 100) : 0
     }))
   );
+
+  const chartOption = computed(() => ({
+    tooltip: {
+      trigger: 'item'
+    },
+    legend: {
+      show: false
+    },
+    graphic: [
+      {
+        type: 'text',
+        left: 'center',
+        top: '42%',
+        style: {
+          text: '总数',
+          fill: '#98a2b3',
+          fontSize: 12
+        }
+      },
+      {
+        type: 'text',
+        left: 'center',
+        top: '52%',
+        style: {
+          text: String(props.total ?? 0),
+          fill: '#111827',
+          fontSize: 24,
+          fontWeight: 700
+        }
+      }
+    ],
+    series: [
+      {
+        type: 'pie',
+        radius: ['55%', '75%'],
+        avoidLabelOverlap: true,
+        label: {
+          show: false
+        },
+        labelLine: {
+          show: false
+        },
+        data: normalizedList.value.map(item => ({
+          name: item.name,
+          value: item.num,
+          itemStyle: {
+            color: item.color
+          }
+        }))
+      }
+    ]
+  }));
 </script>
 
 <style scoped lang="scss">
@@ -117,36 +165,6 @@
     display: flex;
     gap: 24px;
     align-items: center;
-  }
-
-  .donut-shell {
-    flex: 0 0 180px;
-    width: 180px;
-    height: 180px;
-    border-radius: 50%;
-    background:
-      radial-gradient(circle at center, #fff 0 46%, transparent 47%),
-      conic-gradient(#2d6df6 0 30%, #22c55e 30% 56%, #f59e0b 56% 76%, #8b5cf6 76% 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .donut-center {
-    text-align: center;
-  }
-
-  .donut-center span {
-    display: block;
-    color: #98a2b3;
-    font-size: 12px;
-  }
-
-  .donut-center strong {
-    display: block;
-    margin-top: 6px;
-    font-size: 26px;
-    color: #111827;
   }
 
   .legend-list {
@@ -200,11 +218,7 @@
 
   @media (max-width: 860px) {
     .summary-main {
-      grid-template-columns: 1fr;
-    }
-
-    .donut-shell {
-      margin: 0 auto;
+      flex-direction: column;
     }
   }
 </style>

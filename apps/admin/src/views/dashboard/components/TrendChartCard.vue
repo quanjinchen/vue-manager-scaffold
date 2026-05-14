@@ -14,35 +14,13 @@
       <AppEmpty />
     </div>
 
-    <div v-else class="chart-shell">
-      <div class="axis">
-        <span v-for="label in labels" :key="label">{{ label }}</span>
-      </div>
-      <div class="series-list">
-        <div v-for="item in series" :key="item.name" class="series-row">
-          <div class="series-label">
-            <i :style="{ background: item.color }"></i>
-            <span>{{ item.name }}</span>
-          </div>
-          <div class="bars">
-            <div
-              v-for="(value, index) in item.values"
-              :key="`${item.name}-${labels[index]}`"
-              class="bar-wrap"
-            >
-              <div class="bar" :style="{ height: `${getBarHeight(value)}%`, background: item.color }"></div>
-              <em>{{ formatStatisticNumber(value) }}</em>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <EChartPanel v-else :option="chartOption" />
   </section>
 </template>
 
 <script setup lang="ts" name="TrendChartCard">
   import { computed } from 'vue';
-  import { formatStatisticNumber } from '@vue-scaffold/utils';
+  import EChartPanel from './EChartPanel.vue';
 
   type TabItem = {
     id: string;
@@ -73,11 +51,43 @@
     set: value => emit('change', value)
   });
 
-  const maxValue = computed(() => Math.max(...props.series.flatMap(item => item.values), 1));
-
-  function getBarHeight(value: number) {
-    return Math.max((value / maxValue.value) * 100, 8);
-  }
+  const chartOption = computed(() => ({
+    tooltip: {
+      trigger: 'axis'
+    },
+    legend: {
+      bottom: 0
+    },
+    grid: {
+      left: 24,
+      right: 24,
+      top: 16,
+      bottom: 48,
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: props.labels,
+      axisTick: { show: false },
+      axisLine: { lineStyle: { color: '#d0d5dd' } },
+      axisLabel: { color: '#98a2b3' }
+    },
+    yAxis: {
+      type: 'value',
+      splitLine: { lineStyle: { color: '#eef2f6' } },
+      axisLabel: { color: '#98a2b3' }
+    },
+    series: props.series.map(item => ({
+      name: item.name,
+      type: 'bar',
+      barMaxWidth: 24,
+      itemStyle: {
+        borderRadius: [8, 8, 0, 0],
+        color: item.color
+      },
+      data: item.values
+    }))
+  }));
 </script>
 
 <style scoped lang="scss">
@@ -112,80 +122,4 @@
     justify-content: center;
   }
 
-  .chart-shell {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .axis {
-    display: flex;
-    gap: 12px;
-    color: #98a2b3;
-    font-size: 12px;
-    text-align: center;
-  }
-
-  .axis > * {
-    flex: 1 1 44px;
-    min-width: 44px;
-  }
-
-  .series-list {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  }
-
-  .series-row {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .series-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: #344054;
-    font-weight: 600;
-  }
-
-  .series-label i {
-    width: 10px;
-    height: 10px;
-    border-radius: 999px;
-    display: inline-block;
-  }
-
-  .bars {
-    height: 160px;
-    display: flex;
-    gap: 12px;
-    align-items: flex-end;
-  }
-
-  .bar-wrap {
-    flex: 1 1 44px;
-    min-width: 44px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: end;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .bar {
-    width: 100%;
-    min-height: 8px;
-    border-radius: 14px 14px 8px 8px;
-    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.2);
-  }
-
-  .bar-wrap em {
-    font-style: normal;
-    font-size: 12px;
-    color: #667085;
-  }
 </style>
