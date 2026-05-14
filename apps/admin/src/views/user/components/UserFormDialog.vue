@@ -12,60 +12,6 @@
       label-position="top"
     >
       <el-row :gutter="16">
-        <el-col :span="12">
-          <el-form-item label="用户名" prop="username">
-            <AppInput
-              v-model="formData.username"
-              v-trim
-              placeholder="请输入用户名"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="姓名" prop="fullName">
-            <AppInput
-              v-model="formData.fullName"
-              v-trim
-              placeholder="请输入姓名"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="手机号" prop="phone">
-            <AppInput
-              v-model="formData.phone"
-              v-trim
-              placeholder="请输入手机号"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="邮箱" prop="email">
-            <AppInput
-              v-model="formData.email"
-              v-trim
-              placeholder="请输入邮箱"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="身份证号" prop="idCard">
-            <AppInput
-              v-model="formData.idCard"
-              v-trim
-              placeholder="请输入身份证号"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="状态" prop="status">
-            <AppSelect
-              v-model="formData.status"
-              :list="dictStore.userStatusList"
-              :select-props="{ placeholder: '请选择状态' }"
-            />
-          </el-form-item>
-        </el-col>
         <el-col :span="24">
           <el-form-item label="人脸图片">
             <div class="face-upload">
@@ -95,6 +41,82 @@
             </div>
           </el-form-item>
         </el-col>
+
+        <el-col :span="12">
+          <el-form-item label="用户名" prop="username">
+            <AppInput
+              v-model="formData.username"
+              v-trim
+              placeholder="请输入用户名"
+            />
+          </el-form-item>
+        </el-col>
+
+        <el-col :span="12">
+          <el-form-item label="姓名" prop="fullName">
+            <AppInput
+              v-model="formData.fullName"
+              v-trim
+              placeholder="请输入姓名"
+            />
+          </el-form-item>
+        </el-col>
+
+        <el-col v-if="!dataInfo.isEdit" :span="12">
+          <el-form-item label="密码" prop="password">
+            <div class="password-row">
+              <div class="password-input-wrap">
+                <AppInput
+                  v-model="formData.password"
+                  v-trim
+                  placeholder="请输入密码"
+                />
+              </div>
+              <AppButton @click="dataInfo.generatePassword()">随机生成</AppButton>
+            </div>
+          </el-form-item>
+        </el-col>
+
+        <el-col :span="12">
+          <el-form-item label="身份证号" prop="idCard">
+            <AppInput
+              v-model="formData.idCard"
+              v-trim
+              placeholder="请输入身份证号"
+            />
+          </el-form-item>
+        </el-col>
+
+        <el-col :span="12">
+          <el-form-item label="手机号" prop="phone">
+            <AppInput
+              v-model="formData.phone"
+              v-trim
+              placeholder="请输入手机号，可不填"
+            />
+          </el-form-item>
+        </el-col>
+
+        <el-col :span="12">
+          <el-form-item label="邮箱" prop="email">
+            <AppInput
+              v-model="formData.email"
+              v-trim
+              placeholder="请输入邮箱，可不填"
+            />
+          </el-form-item>
+        </el-col>
+
+        <el-col :span="12">
+          <el-form-item label="状态" prop="status">
+            <AppSelect
+              v-model="formData.status"
+              :list="dictStore.userStatusList"
+              :select-props="{ placeholder: '请选择状态' }"
+            />
+          </el-form-item>
+        </el-col>
+
         <el-col :span="24">
           <el-form-item label="备注" prop="remark">
             <AppInput
@@ -110,12 +132,15 @@
 </template>
 
 <script setup lang="ts" name="UserFormDialog">
-import { computed, reactive, ref, watch, toRefs, onBeforeUnmount } from "vue";
-import type { FormInstance } from "element-plus";
+import { computed, onBeforeUnmount, reactive, ref, toRefs, watch } from "vue";
+import type { FormInstance, FormRules } from "element-plus";
 import { messageAlert, useVModel } from "@vue-scaffold/utils";
 import { $apis } from "@/api/requests";
 import type { UserRecord } from "@/types/domain";
 import { dictStore } from "@vue-scaffold/constants";
+
+const ID_CARD_PATTERN =
+  /^(?:[1-9]\d{5}(?:18|19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[\dXx]|[1-9]\d{5}\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3})$/;
 
 const props = defineProps<{
   modelValue: boolean;
@@ -140,34 +165,11 @@ function fileToDataUrl(file: File) {
   });
 }
 
-const modalProps = computed(() => ({
-  title: `${dataInfo.isEdit ? "编辑" : "新增"}用户`,
-  width: 720,
-}));
-
-const footerProps = computed(() => ({
-  buttons: [
-    { text: "取消", close: true, buttonProps: {} },
-    {
-      text: submitLoading.value ? "保存中..." : "保存",
-      close: false,
-      buttonProps: { type: "primary", loading: submitLoading.value },
-      click: () => dataInfo.handleSubmit(),
-    },
-  ],
-}));
-
-watch(visible, (value) => {
-  !value && dataInfo.initForm();
-  value && dataInfo.getDetail();
-});
-
-// 数据信息
 const dataInfo: any = reactive({
-  // 表单数据
   formData: {
     username: "",
     fullName: "",
+    password: "",
     phone: "",
     email: "",
     idCard: "",
@@ -175,23 +177,51 @@ const dataInfo: any = reactive({
     status: "",
     remark: "",
   },
-  // 表单验证规则
   rules: {
     username: [{ required: true, message: "请输入用户名", trigger: "blur" }],
     fullName: [{ required: true, message: "请输入姓名", trigger: "blur" }],
-    phone: [{ required: true, message: "请输入手机号", trigger: "blur" }],
-    email: [{ required: true, message: "请输入邮箱", trigger: "blur" }],
-  },
+    idCard: [
+      { required: true, message: "请输入身份证号", trigger: "blur" },
+      {
+        validator: (_rule: unknown, value: string, callback: (error?: Error) => void) => {
+          if (!value) {
+            callback(new Error("请输入身份证号"));
+            return;
+          }
+          if (!ID_CARD_PATTERN.test(value)) {
+            callback(new Error("身份证号格式不正确"));
+            return;
+          }
+          callback();
+        },
+        trigger: "blur",
+      },
+    ],
+    password: [
+      {
+        validator: (_rule: unknown, value: string, callback: (error?: Error) => void) => {
+          if (dataInfo.isEdit) {
+            callback();
+            return;
+          }
+          if (!value) {
+            callback(new Error("请输入密码"));
+            return;
+          }
+          callback();
+        },
+        trigger: "blur",
+      },
+    ],
+  } as FormRules,
   submitLoading: false,
   loading: false,
   facePreviewUrl: "",
   faceFile: null as File | null,
   faceChanged: false,
-  // 是否编辑模式
   get isEdit() {
     return Boolean(props.selectItem?.id);
   },
-  // 初始化表单
   initForm() {
     formRef.value?.resetFields();
     formRef.value?.clearValidate();
@@ -202,6 +232,15 @@ const dataInfo: any = reactive({
     if (fileInputRef.value) {
       fileInputRef.value.value = "";
     }
+  },
+  generatePassword() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*";
+    let password = "";
+    for (let index = 0; index < 12; index++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    this.formData.password = password;
+    formRef.value?.validateField?.("password");
   },
   revokeFacePreviewUrl() {
     if (this.facePreviewUrl?.startsWith?.("blob:")) {
@@ -246,6 +285,7 @@ const dataInfo: any = reactive({
       this.formData = {
         username: "",
         fullName: "",
+        password: "",
         phone: "",
         email: "",
         idCard: "",
@@ -275,6 +315,9 @@ const dataInfo: any = reactive({
   },
   get params() {
     const params: Record<string, any> = { ...dataInfo.formData };
+    if (dataInfo.isEdit) {
+      delete params.password;
+    }
     if (!dataInfo.faceChanged) {
       delete params.faceFileId;
       return params;
@@ -282,7 +325,6 @@ const dataInfo: any = reactive({
     params.faceFileId = dataInfo.formData.faceFileId || null;
     return params;
   },
-  // 提交表单
   async handleSubmit() {
     await formRef.value?.validate();
     if (this.submitLoading) return;
@@ -304,13 +346,34 @@ const dataInfo: any = reactive({
   },
 });
 
+const modalProps = computed(() => ({
+  title: `${dataInfo.isEdit ? "编辑" : "新增"}用户`,
+  width: 720,
+}));
+
+const footerProps = computed(() => ({
+  buttons: [
+    { text: "取消", close: true, buttonProps: {} },
+    {
+      text: submitLoading.value ? "保存中..." : "保存",
+      close: false,
+      buttonProps: { type: "primary", loading: submitLoading.value },
+      click: () => dataInfo.handleSubmit(),
+    },
+  ],
+}));
+
+watch(visible, (value) => {
+  !value && dataInfo.initForm();
+  value && dataInfo.getDetail();
+});
+
 const { submitLoading, loading, formData } = toRefs(dataInfo);
 
 onBeforeUnmount(() => {
   dataInfo.revokeFacePreviewUrl();
 });
 
-// 暴露
 defineExpose({ dataInfo });
 </script>
 
@@ -335,6 +398,21 @@ defineExpose({ dataInfo });
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.password-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.password-input-wrap {
+  flex: 1;
+}
+
+.password-input-wrap :deep(.AppInput) {
+  width: 100%;
 }
 
 .face-file-input {
