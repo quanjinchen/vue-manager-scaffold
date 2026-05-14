@@ -57,6 +57,12 @@
       :checked-menu-ids="checkedMenuIds"
       @success="dataInfo.handleGrantSuccess"
     />
+
+    <GrantRoleUsersDialog
+      v-model="dataInfo.grantUsersDialogVisible"
+      :select-item="dataInfo.selectedGrantRoleForUsers"
+      @success="dataInfo.handleGrantUsersSuccess"
+    />
   </main>
 </template>
 
@@ -65,6 +71,7 @@ import { reactive, toRefs } from 'vue';
 import { debounce, messageAlert, messageConfirm } from '@vue-scaffold/utils';
 import RoleFormDialog from '@/views/system/components/RoleFormDialog.vue';
 import GrantRoleMenusDialog, { type GrantMenuTreeNode } from '@/views/system/components/GrantRoleMenusDialog.vue';
+import GrantRoleUsersDialog from '@/views/system/components/GrantRoleUsersDialog.vue';
 import tableInfo from '@/views/system/tables/Role';
 import { $apis } from '@/api/requests';
 import type { RoleRecord } from '@/types/domain';
@@ -100,8 +107,10 @@ const dataInfo = reactive({
   },
   dialogVisible: false,
   grantDialogVisible: false,
+  grantUsersDialogVisible: false,
   selectedRecord: null as RoleRecord | null,
   selectedGrantRole: null as RoleRecord | null,
+  selectedGrantRoleForUsers: null as RoleRecord | null,
   grantMenus: [] as GrantMenuTreeNode[],
   checkedMenuIds: [] as number[],
   list: [] as RoleRecord[],
@@ -171,6 +180,14 @@ const dataInfo = reactive({
   handleGrantSuccess() {
     this.grantDialogVisible = false;
   },
+  async openGrantUsers(row: RoleRecord) {
+    this.selectedGrantRoleForUsers = row;
+    await Promise.resolve();
+    this.grantUsersDialogVisible = true;
+  },
+  handleGrantUsersSuccess() {
+    this.grantUsersDialogVisible = false;
+  },
   async deleteRole(row: RoleRecord) {
     if (this.actionLoading) {
       return;
@@ -195,6 +212,7 @@ const dataInfo = reactive({
 
     const actionMap: Record<string, () => void | Promise<void>> = {
       grantMenus: () => dataInfo.openGrantMenus(row),
+      grantUsers: () => dataInfo.openGrantUsers(row),
       edit: () => dataInfo.openEdit(row),
       delete: () => dataInfo.deleteRole(row),
     };

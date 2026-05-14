@@ -24,6 +24,7 @@ export default {
       width: 280,
       actions: [
         { key: 'grantMenus', label: '分配菜单', permissions: 'system:role:update' },
+        { key: 'grantUsers', label: '分配用户', permissions: 'system:role:update' },
         { key: 'edit', label: '编辑', permissions: 'system:role:update' },
         {
           key: 'delete',

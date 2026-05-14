@@ -150,6 +150,15 @@ export const $apis = {
     },
     grantMenus(params: RequestParams = {}) {
       return appRequest.post('/api/role/grant-role-menus', params);
+    },
+    assignableUsers(params: RequestParams = {}) {
+      return appRequest.post('/api/role/list-role-assignable-users', params);
+    },
+    roleUsers(params: RequestParams = {}) {
+      return appRequest.post('/api/role/list-role-users', params);
+    },
+    grantUsers(params: RequestParams = {}) {
+      return appRequest.post('/api/role/grant-role-users', params);
     }
   },
   userRoles: {
